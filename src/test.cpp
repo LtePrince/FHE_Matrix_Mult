@@ -100,22 +100,25 @@ int main()
 
     //define two Matrix and initialize them
     int m = 0, l = 0, n = 0;
-    cin >> m >> l >> m;
-
+    cout << "input the m, l, n:";
+    cin >> m >> l >> n;
+    cout << m << " " << l << " " << n << endl;
     vector<uint64_t> pod_matrix1(slot_count, 0ULL);
     vector<uint64_t> pod_matrix2(slot_count, 0ULL);
+    cout << "input the matrix1:" << endl;
     for (int i = 0; i < m; i++)
     {
         for (int j = 0; j < l; j++)
         {
-            cin >> pod_matrix1[i * m + j];
+            cin >> pod_matrix1[i * l + j];
         }
     }
+    cout << "input the matrix2:" << endl;
     for (int i = 0; i < l; i++)
     {
         for (int j = 0; j < n; j++)
         {
-            cin >> pod_matrix2[i * l + j];
+            cin >> pod_matrix2[i * n + j];
         }
     }
 
