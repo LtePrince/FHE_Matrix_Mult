@@ -20,51 +20,26 @@ using namespace seal;
 //    ~Plain_Matrix() {};
 //};
 
-class Cipher_Matrix
-{
-public:
-    Ciphertext m;
-    size_t col;
-    size_t row;
-    Cipher_Matrix(Ciphertext p, size_t col, size_t row)
-    {
-        this->col = col;
-        this->row = row;
-        this->m = p;
-    }
-    ~Cipher_Matrix() {};
-};
+//int Matrix_Padding_by_zero(Cipher_Matrix m1, Cipher_Matrix m2)
+//{
+//    for (int i = 0; i < m2.col; i++)
+//    {
+//        for (int j = 0; j < m2.row; j++)
+//        {
+//            
+//        }
+//    }
+//    return 0;
+//
+//}
 
-int RoundUP_2_Power(int num)
-{
-    int i = 1;
-    while (i < num)
-    {
-        i *= 2;
-    }
-    return i;
-}
-
-int Matrix_Padding_by_zero(Cipher_Matrix m1, Cipher_Matrix m2)
-{
-    for (int i = 0; i < m2.col; i++)
-    {
-        for (int j = 0; j < m2.row; j++)
-        {
-            
-        }
-    }
-    return 0;
-
-}
-
-int main()
+int BGV()
 {
     /*
     Note that scheme_type is now "bgv".
     */
     EncryptionParameters parms(scheme_type::bgv);
-    size_t poly_modulus_degree =  8192;
+    size_t poly_modulus_degree =  4096*2;
     parms.set_poly_modulus_degree(poly_modulus_degree);
 
     /*
@@ -88,6 +63,8 @@ int main()
     keygen.create_public_key(public_key);
     RelinKeys relin_keys;
     keygen.create_relin_keys(relin_keys);
+    GaloisKeys galois_keys;
+    keygen.create_galois_keys(galois_keys);
     Encryptor encryptor(context, public_key);
     Evaluator evaluator(context);
     Decryptor decryptor(context, secret_key);
@@ -97,9 +74,12 @@ int main()
     */
     BatchEncoder batch_encoder(context);
     size_t slot_count = batch_encoder.slot_count();
+    size_t row_size = slot_count / 4;
+    cout << "Plaintext matrix slot count: " << slot_count << endl;
+    cout << "Plaintext matrix row size: " << row_size << endl;
 
     //define two Matrix and initialize them
-    int m = 0, l = 0, n = 0;
+    /*int m = 0, l = 0, n = 0;
     cout << "input the m, l, n:";
     cin >> m >> l >> n;
     cout << m << " " << l << " " << n << endl;
@@ -123,22 +103,16 @@ int main()
     }
 
     cout << "Input plaintext matrix1:" << endl;
-    print_matrix(pod_matrix1, l);
+    print_matrix(pod_matrix1, row_size);
     Plaintext m1_plain;
     cout << "Encode plaintext matrix to x_plain:" << endl;
     batch_encoder.encode(pod_matrix1, m1_plain);
-    //Plain_Matrix m1(m1_plain, m, l);
 
     cout << "Input plaintext matrix2:" << endl;
-    print_matrix(pod_matrix2, n);
+    print_matrix(pod_matrix2, row_size);
     Plaintext m2_plain;
     cout << "Encode plaintext matrix to x_plain:" << endl;
     batch_encoder.encode(pod_matrix2, m2_plain);
-    //Plain_Matrix m2(m2_plain, l, n);
-
-    /*
-    Next we encrypt the encoded plaintext.
-    */
     Ciphertext m1_encrypted;
     print_line(__LINE__);
     cout << "Encrypt m1_plain to m1_encrypted." << endl;
@@ -157,7 +131,6 @@ int main()
     cout << endl;
     Cipher_Matrix m2(m2_encrypted, l, n);
 
-    //calculate on the ciphertext
     int m0 = RoundUP_2_Power(m1.col),
         l0 = RoundUP_2_Power(m1.row),
         n0 = RoundUP_2_Power(m2.row);
@@ -173,12 +146,20 @@ int main()
     else
     {
         m0 > n0 ? (D0 = m0, D1 = l0) : (D0 = l0, D1 = n0);
-    }
-
-
+    }*/
 
 
     //to be continues
+
+    /*evaluator.rotate_rows_inplace(m1.m,4,galois_keys);
+    
+    Plaintext decrypted_result;
+    decryptor.decrypt(m1.m, decrypted_result);
+    vector<uint64_t> pod_result;
+    batch_encoder.decode(decrypted_result, pod_result);
+    cout << "    + result plaintext matrix ...... Correct." << endl;
+    print_matrix(pod_result, row_size);*/
+    
 
     return 0;
 }
