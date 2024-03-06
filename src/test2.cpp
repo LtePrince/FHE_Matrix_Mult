@@ -5,6 +5,16 @@
 using namespace std;
 using namespace seal;
 
+class Plain_Matrix
+{
+public:
+    Plaintext m;
+    size_t col[2] = { 0 };
+    size_t row[2] = { 0 };
+    Plain_Matrix() {};
+    ~Plain_Matrix() {};
+};
+
 class Cipher_Matrix
 {
 public:
@@ -149,6 +159,15 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
         evaluator.mod_switch_to_inplace(mask1, last_parms_id);
         evaluator.mod_switch_to_inplace(mask2, last_parms_id);
 
+        cout << "m scale: " << m.m.scale() << endl;
+        cout << "mask1 scale: " << mask1.scale() << endl;
+
+        cout << "m parm_id: " << last_parms_id << endl;
+        cout << "mask1 parm_id: " << mask1.parms_id() << endl;
+        cout << endl;
+
+
+
         evaluator.multiply_plain(m.m, mask1, rotate_data1);
         evaluator.rescale_to_next_inplace(rotate_data1);
 
@@ -199,9 +218,62 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
     }
 }
 
-void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, /*int l, */int slot_count, int scale)
+void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, /*int l, */int slot_count, int scale)
 {
+    
+
     int l = (dim == 1) ? m.row[0] : m.col[0];
+    for (int k = 0; k < l; k++)
+    {
+        Cipher_Matrix pm;
+        pm.col[0] = m.col[0], pm.col[1] = m.col[1], pm.row[0] = m.row[0], pm.row[1] = m.row[1];
+
+        Plaintext mask;
+        vector<double> input(slot_count, 0.0);
+        for (int i = 0; i < m.col[0]; i++)
+        {
+            for (int j = 0; j < m.row[0]; j++)
+            {
+                if (dim == 1 && i == k)
+                {
+                    input[i * m.row[0] + j] = 1;
+                }
+                else if (dim == 0 && j == k)
+                {
+                    input[i * m.row[0] + j] = 1;
+                }
+            }
+        }
+        encoder.encode(input, scale, mask);
+
+        Ciphertext rotate_data;
+        parms_id_type last_parms_id = m.m.parms_id();
+        cout << "m parm_id: " << last_parms_id << endl;
+        cout << "m scale: " << m.m.scale() << endl;
+        evaluator.mod_switch_to_inplace(mask, last_parms_id);
+
+        evaluator.multiply_plain(m.m, mask, rotate_data);
+
+        cout << "row_data parm_id: " << rotate_data.parms_id() << endl;
+        cout << "rotate_data scale: " << rotate_data.scale() << endl;
+        
+        rotate_data.scale() = pow(2, 40);
+        evaluator.mod_switch_to_inplace(rotate_data, last_parms_id);
+        //evaluator.rescale_to_inplace(rotate_data, last_parms_id);
+        cout << "row_data parm_id: " << rotate_data.parms_id() << endl;
+        cout << "rotate_data scale: " << rotate_data.scale() << endl;
+        //m.m = rotate_data;
+        cout << "m scale: " << m.m.scale() << endl;
+
+        pm.m = rotate_data;
+        cout << "pm parm_id: " << pm.m.parms_id() << endl;
+        cout << "pm scale: " << pm.m.scale() << endl;
+        cout << endl;
+        Rotate1D(pm, encoder, evaluator, gal_keys, dim, k, slot_count, scale);
+
+
+        evaluator.add_inplace(destination.m, pm.m);
+    }
 }
 
 void Replicate1D()
@@ -215,7 +287,7 @@ int main()
 
     size_t poly_modulus_degree = 8192*2;
     parms.set_poly_modulus_degree(poly_modulus_degree);
-    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, { 60, 40, 40, 40, 40, 40, 40, 60 }));
+    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, { 60, 40, 40, 40, 40, 40, 40, 40, 60 }));
 
     double scale = pow(2.0, 30);
 
@@ -247,8 +319,12 @@ int main()
     Mat_dim_process(m1, encoder, evaluator, gal_keys, slot_count, scale);
     //Mat_dim_process(m2, encoder, evaluator, gal_keys, slot_count, scale);
 
-    cout << "Rotate1D:" << endl;
-    Rotate1D(m1, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
+    //cout << "Rotate1D:" << endl;
+    //Rotate1D(m1, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
+
+    Cipher_Matrix r_m;
+    cout << "RotateAlign:" << endl;
+    RotateAlign(m1, r_m, encoder, evaluator, gal_keys, 1, slot_count, scale);
 
     //cout << "Extern:" << endl;
     //Mat_Extern(m1, encoder, evaluator, gal_keys, slot_count, scale, 8, 8);
