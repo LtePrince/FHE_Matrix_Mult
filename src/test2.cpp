@@ -316,7 +316,7 @@ void Sum1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisK
     //未作scale和parm_id的调整
     for (int k = log(D1 / d_dim) / log(2); k > 0; k--)
     {
-        Plaintext mask;
+/*        Plaintext mask;
         encoder.encode(1.0, scale, mask);
 
         Cipher_Matrix rotate_data;
@@ -328,16 +328,17 @@ void Sum1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisK
         parms_id_type last_parms_id = m.m.parms_id();
         evaluator.mod_switch_to_inplace(mask, last_parms_id);
         evaluator.multiply_plain(m.m, mask, rotate_data.m);
-        evaluator.rescale_to_next_inplace(rotate_data.m);
-
+        evaluator.rescale_to_next_inplace(rotate_data.m);*/
+        Cipher_Matrix rotate_data = m;
         Rotate1D(rotate_data, encoder, evaluator, gal_keys, dim, k*d_dim, slot_count, scale);
         cout << "m scale: " << m.m.scale() << endl;
         cout << "rotate_data scale: " << rotate_data.m.scale() << endl;
 
-        cout << "m parm_id: " << last_parms_id << endl;
+        //cout << "m parm_id: " << last_parms_id << endl;
         cout << "rotate_data parm_id: " << rotate_data.m.parms_id() << endl;
         cout << endl;
-        
+        m.m.scale() = rotate_data.m.scale();
+        evaluator.mod_switch_to_inplace(m.m, rotate_data.m.parms_id());
         evaluator.add_inplace(m.m, rotate_data.m);
     }
 }
