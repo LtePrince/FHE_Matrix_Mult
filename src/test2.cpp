@@ -57,7 +57,7 @@ int RoundUP_2_Power(int num)
 
 void Mat_dim_process(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator &evaluator, GaloisKeys &gal_keys, int slot_count, double scale)
 {
-    //ÔÝ²»½øÐÐ¾ØÕó´óÐ¡ÊÇ·ñ³¬¹ýÊý¾Ý²ÛµÄÑéÖ¤
+    //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ð¾ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½Ç·ñ³¬¹ï¿½ï¿½ï¿½ï¿½Ý²Ûµï¿½ï¿½ï¿½Ö¤
     m.col[1] = RoundUP_2_Power(m.col[0]);
     m.row[1] = RoundUP_2_Power(m.row[0]);
     int a = m.row[1], b = m.row[0];
@@ -105,7 +105,7 @@ void Mat_dim_process(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator &evaluato
 
 void Mat_Extern(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count, double scale, int D0, int D1)
 {
-    //ÔÝ²»½øÐÐ¾ØÕó´óÐ¡ÊÇ·ñ³¬¹ýÊý¾Ý²ÛµÄÑéÖ¤
+    //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ð¾ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½Ç·ñ³¬¹ï¿½ï¿½ï¿½ï¿½Ý²Ûµï¿½ï¿½ï¿½Ö¤
     int a = D1, b = m.row[1];
     int i = m.col[0] - 1;
     for (; i > 0; i--)
@@ -146,7 +146,7 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
     int c1 = m.col[0], r1 = m.row[0];
     int c2 = m.col[1], r2 = m.row[1];
     int step_t = (step % r1 + r1) % r1;
-    if (dim == 1)//Ë®Æ½·½ÏòÐý×ª£¬Õý·½ÏòÎª×ó
+    if (dim == 1)//Ë®Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½
     {
         Plaintext mask1;
         Plaintext mask2;
@@ -191,7 +191,7 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
         m.m = rotate_data1;
 
     }
-    else if (dim == 0)//´¹Ö±·½ÏòÐý×ª£¬Õý·½ÏòÎªÉÏ
+    else if (dim == 0)//ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½
     {
         Plaintext mask1;
         Plaintext mask2;
@@ -312,8 +312,8 @@ void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
 
 void Sum1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int d_dim, int D0, int D1, int slot_count, double scale)
 {
-    //Sum1D²ÎÊýD0,D1¿É´ÓmÖÐ»ñÈ¡
-    //Î´×÷scaleºÍparm_idµÄµ÷Õû
+    //Sum1Dï¿½ï¿½ï¿½ï¿½D0,D1ï¿½É´ï¿½mï¿½Ð»ï¿½È¡
+    //Î´ï¿½ï¿½scaleï¿½ï¿½parm_idï¿½Äµï¿½ï¿½ï¿½
     for (int k = log(D1 / d_dim) / log(2); k > 0; k--)
     {
 /*        Plaintext mask;
@@ -323,13 +323,17 @@ void Sum1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisK
         rotate_data.col[0] = m.col[0];
         rotate_data.col[1] = m.col[1];
         rotate_data.row[0] = m.row[0];
+
         rotate_data.row[1] = m.row[1];
 
         parms_id_type last_parms_id = m.m.parms_id();
         evaluator.mod_switch_to_inplace(mask, last_parms_id);
         evaluator.multiply_plain(m.m, mask, rotate_data.m);
         evaluator.rescale_to_next_inplace(rotate_data.m);*/
-        Cipher_Matrix rotate_data = m;
+        Cipher_Matrix rotate_data;
+        rotate_data.m = m.m;
+        rotate_data.col[0] = rotate_data.col[1] = m.col[1];
+        rotate_data.row[0] = rotate_data.row[1] = m.row[1];
         Rotate1D(rotate_data, encoder, evaluator, gal_keys, dim, k*d_dim, slot_count, scale);
         cout << "m scale: " << m.m.scale() << endl;
         cout << "rotate_data scale: " << rotate_data.m.scale() << endl;
@@ -345,7 +349,7 @@ void Sum1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisK
 
 void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count, double scale)
 {
-    //Ðè²¹³ä¶ÔA0,B0µÄ³õÊ¼»¯
+    //ï¿½è²¹ï¿½ï¿½ï¿½A0,B0ï¿½Ä³ï¿½Ê¼ï¿½ï¿½
     Cipher_Matrix A0;
     Cipher_Matrix B0;
     RotateAlign(m1, A0, encoder, evaluator, gal_keys, 1, slot_count, scale);
