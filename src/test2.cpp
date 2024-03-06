@@ -141,12 +141,11 @@ void Mat_Extern(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Ga
     m.col[1] = D1;
 }
 
-void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int step, int slot_count, int scale)
+void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int step, int slot_count, double scale)
 {
     int c1 = m.col[0], r1 = m.row[0];
     int c2 = m.col[1], r2 = m.row[1];
     int step_t = (step % r1 + r1) % r1;
-    
     if (dim == 1)//水平方向旋转，正方向为左
     {
         Plaintext mask1;
@@ -351,9 +350,9 @@ int main()
 
     size_t poly_modulus_degree = 8192*2;
     parms.set_poly_modulus_degree(poly_modulus_degree);
-    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, { 60, 30, 30, 30, 30, 30, 30, 30, 60 }));
+    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, { 60, 40, 40, 40, 40, 40, 40, 40, 60 }));
 
-    double scale = pow(2.0, 30);
+    double scale = pow(2.0, 40);
 
     SEALContext context(parms);
     print_parameters(context);
@@ -384,9 +383,8 @@ int main()
     Mat_dim_process(m1, encoder, evaluator, gal_keys, slot_count, scale);
     cout << "    + Scale of M_d_p after rescale: " << log2(m1.m.scale()) << " bits" << endl;
     //Mat_dim_process(m2, encoder, evaluator, gal_keys, slot_count, scale);
-
-    //cout << "Rotate1D:" << endl;
-    //Rotate1D(m1, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
+    cout << "Rotate1D:" << endl;
+    Rotate1D(m1, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
 
     //Cipher_Matrix r_m;
     //cout << "RotateAlign:" << endl;
