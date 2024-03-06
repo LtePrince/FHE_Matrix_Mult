@@ -230,7 +230,7 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
 
 void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, /*int l, */int slot_count, double scale)
 {
-    int l = (dim == 1) ? m.row[0] : m.col[0];
+    int l = (dim == 1) ? m.col[0] : m.row[0];
     for (int k = 0; k < l; k++)
     {
         Cipher_Matrix pm;
@@ -244,11 +244,11 @@ void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
             {
                 if (dim == 1 && i == k)
                 {
-                    input[i * m.row[0] + j] = 1;
+                    input[i * m.row[1] + j] = 1;
                 }
                 else if (dim == 0 && j == k)
                 {
-                    input[i * m.row[0] + j] = 1;
+                    input[i * m.row[1] + j] = 1;
                 }
             }
         }
