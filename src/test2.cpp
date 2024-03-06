@@ -496,7 +496,14 @@ int main()
     Rotate1D(m1, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
 
     Cipher_Matrix r_m;
-    Init_Matrix(r_m, encoder, encryptor, slot_count, scale);
+    //Init_Matrix(r_m, encoder, encryptor, slot_count, scale);
+    r_m.col[0] = m1.col[0], r_m.col[1] = m1.col[1], 
+    r_m.row[0] = m1.row[0], r_m.row[1] = m1.row[1];
+    Plaintext zero_p;
+    vector<double> zero(slot_count, 0.0);
+    encoder.encode(zero, scale, zero_p);
+    encryptor.encrypt(zero_p, r_m.m);
+
     cout << "RotateAlign:" << endl;
     RotateAlign(m1, r_m, encoder, evaluator, gal_keys, 1, slot_count, scale);
 
@@ -508,7 +515,7 @@ int main()
 
     Plaintext plain_result_m1;
     vector<double> result;
-    decryptor.decrypt(m1.m, plain_result_m1);
+    decryptor.decrypt(r_m.m, plain_result_m1);
     encoder.decode(plain_result_m1, result);
     print_vector(result, 16, 5);
 
