@@ -145,7 +145,8 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
 {
     int c1 = m.col[0], r1 = m.row[0];
     int c2 = m.col[1], r2 = m.row[1];
-    int step_t = (step % r1 + r1) % r1;
+//    int step_t = (step % r1 + r1) % r1;
+    int step_t = (step + r1 - 1) % r1 +1;
     if (dim == 1)//水平方向旋转，正方向为左
     {
         Plaintext mask1;
@@ -175,7 +176,6 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
         cout << "m parm_id: " << last_parms_id << endl;
         cout << "mask1 parm_id: " << mask1.parms_id() << endl;
         cout << endl;
-
 
 
         evaluator.multiply_plain(m.m, mask1, rotate_data1);
@@ -278,8 +278,8 @@ void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
         cout << "pm scale: " << pm.m.scale() << endl;
         cout << endl;
         Rotate1D(pm, encoder, evaluator, gal_keys, dim, k, slot_count, scale);
-
-
+        destination.m.scale() = pm.m.scale();
+        evaluator.mod_switch_to_inplace(destination.m, pm.m.parms_id());
         evaluator.add_inplace(destination.m, pm.m);
     }
 }
@@ -491,9 +491,10 @@ int main()
     cout << "Rotate1D:" << endl;
     Rotate1D(m1, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
 
-    //Cipher_Matrix r_m;
-    //cout << "RotateAlign:" << endl;
-    //RotateAlign(m1, r_m, encoder, evaluator, gal_keys, 1, slot_count, scale);
+    Cipher_Matrix r_m;
+    Init_Matrix(r_m, encoder, encryptor, slot_count, scale);
+    cout << "RotateAlign:" << endl;
+    RotateAlign(m1, r_m, encoder, evaluator, gal_keys, 1, slot_count, scale);
 
     cout << "Sum1D:" << endl;
     Sum1D(m1, encoder, evaluator, gal_keys, 1, 2, m1.col[1], m1.row[1], slot_count, scale);
