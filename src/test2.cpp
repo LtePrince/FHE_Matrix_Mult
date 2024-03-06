@@ -230,8 +230,6 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
 
 void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, /*int l, */int slot_count, double scale)
 {
-    
-
     int l = (dim == 1) ? m.row[0] : m.col[0];
     for (int k = 0; k < l; k++)
     {
@@ -314,7 +312,7 @@ void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
 
 void Sum1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int d_dim, int D0, int D1, int slot_count, double scale)
 {
-
+    //Sum1D参数D0,D1可从m中获取
     //未作scale和parm_id的调整
     for (int k = log(D1 / d_dim) / log(2); k > 0; k--)
     {
@@ -342,6 +340,112 @@ void Sum1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisK
         
         evaluator.add_inplace(m.m, rotate_data.m);
     }
+}
+
+void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count, double scale)
+{
+    //需补充对A0,B0的初始化
+    Cipher_Matrix A0;
+    Cipher_Matrix B0;
+    RotateAlign(m1, A0, encoder, evaluator, gal_keys, 1, slot_count, scale);
+    RotateAlign(m2, B0, encoder, evaluator, gal_keys, 0, slot_count, scale);
+
+    int m = m1.col[1], l = m1.row[1], n = m2.row[1];
+    int min_edge = (m < l) ? ((m < n) ? m : n) : ((l < n) ? l : n);
+    for (int i = 0; i < min_edge; i++)
+    {
+        Ciphertext tmp;
+        evaluator.multiply(m1.m, m2.m, tmp);
+        evaluator.add_inplace(destination.m, tmp);
+        Rotate1D(A0, encoder, evaluator, gal_keys, 1, 1, slot_count, scale);
+        Rotate1D(B0, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
+    }
+}
+
+void Homo_mat_mult_min(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count, double scale)
+{
+    int m0 = m1.col[1],
+        l0 = m1.row[1],
+        n0 = m2.row[1];
+    int D0, D1 = 0;
+    if (l0 <= m0 && l0 <= n0)
+    {
+        D0 = m0, D1 = n0;
+    }
+    else if (l0 >= m0 && l0 >= n0)
+    {
+        D0 = D1 = l0;
+    }
+    else
+    {
+        m0 > n0 ? (D0 = m0, D1 = l0) : (D0 = l0, D1 = n0);
+    }
+
+    Cipher_Matrix A0;
+    Cipher_Matrix B0;
+
+    Replicate1D(m1, A0, encoder, evaluator, gal_keys, 1, l0, D0, D1, slot_count, scale);
+    Replicate1D(m1, B0, encoder, evaluator, gal_keys, 0, l0, D0, D1, slot_count, scale);
+
+    FHE_MatMultMain(A0, B0, destination, encoder, evaluator, gal_keys, slot_count, scale);
+}
+
+void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count, double scale)
+{
+    int m0 = m1.col[1],
+        l0 = m1.row[1],
+        n0 = m2.row[1];
+    int D0, D1 = 0;
+    if (l0 <= m0 && l0 <= n0)
+    {
+        D0 = m0, D1 = n0;
+    }
+    else if (l0 >= m0 && l0 >= n0)
+    {
+        D0 = D1 = l0;
+    }
+    else
+    {
+        m0 > n0 ? (D0 = m0, D1 = l0) : (D0 = l0, D1 = n0);
+    }
+
+    Cipher_Matrix A0;
+    Cipher_Matrix B0;
+
+    Replicate1D(m1, A0, encoder, evaluator, gal_keys, 1, n0, D0, D1, slot_count, scale);
+    Replicate1D(A0, B0, encoder, evaluator, gal_keys, 1, n0, D0, D1, slot_count, scale);
+
+    FHE_MatMultMain(m1, B0, destination, encoder, evaluator, gal_keys, slot_count, scale);
+    Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[0], D0, D1, slot_count, scale);
+}
+
+void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count, double scale)
+{
+    int m0 = m1.col[1],
+        l0 = m1.row[1],
+        n0 = m2.row[1];
+    int D0, D1 = 0;
+    if (l0 <= m0 && l0 <= n0)
+    {
+        D0 = m0, D1 = n0;
+    }
+    else if (l0 >= m0 && l0 >= n0)
+    {
+        D0 = D1 = l0;
+    }
+    else
+    {
+        m0 > n0 ? (D0 = m0, D1 = l0) : (D0 = l0, D1 = n0);
+    }
+
+    Cipher_Matrix A0;
+    Cipher_Matrix B0;
+
+    Replicate1D(m1, A0, encoder, evaluator, gal_keys, 1, m0, D0, D1, slot_count, scale);
+    Replicate1D(m1, B0, encoder, evaluator, gal_keys, 0, n0, D0, D1, slot_count, scale);
+
+    FHE_MatMultMain(A0, B0, destination, encoder, evaluator, gal_keys, slot_count, scale);
+    Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[0], D0, D1, slot_count, scale);
 }
 
 int main()
