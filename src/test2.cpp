@@ -228,7 +228,7 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
     }
 }
 
-void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, /*int l, */int slot_count, int scale)
+void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, /*int l, */int slot_count, double scale)
 {
     
 
@@ -286,7 +286,7 @@ void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
     }
 }
 
-void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int d_dim, int D0, int D1, int slot_count, int scale)
+void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int d_dim, int D0, int D1, int slot_count, double scale)
 {
     destination.m = m.m;
     destination.col[0] = m.col[0];
@@ -312,7 +312,7 @@ void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
     }
 }
 
-void Sum1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int d_dim, int D0, int D1, int slot_count, int scale)
+void Sum1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int d_dim, int D0, int D1, int slot_count, double scale)
 {
 
     //未作scale和parm_id的调整
@@ -390,8 +390,8 @@ int main()
     //cout << "RotateAlign:" << endl;
     //RotateAlign(m1, r_m, encoder, evaluator, gal_keys, 1, slot_count, scale);
 
-    //cout << "Sum1D:" << endl;
-    //Sum1D(m1, encoder, evaluator, gal_keys, 1, 2, m1.col[1], m1.row[1], slot_count, scale);
+    cout << "Sum1D:" << endl;
+    Sum1D(m1, encoder, evaluator, gal_keys, 1, 2, m1.col[1], m1.row[1], slot_count, scale);
 
     //cout << "Extern:" << endl;
     //Mat_Extern(m1, encoder, evaluator, gal_keys, slot_count, scale, 8, 8);
