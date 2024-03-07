@@ -265,9 +265,9 @@ void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
         cout << "row_data parm_id: " << rotate_data.parms_id() << endl;
         cout << "rotate_data scale: " << rotate_data.scale() << endl;
         
-        rotate_data.scale() = pow(2, 40);
-        evaluator.mod_switch_to_inplace(rotate_data, last_parms_id);
-        //evaluator.rescale_to_inplace(rotate_data, last_parms_id);
+        //rotate_data.scale() = pow(2, 40);
+        //evaluator.mod_switch_to_inplace(rotate_data, last_parms_id);
+        evaluator.rescale_to_next_inplace(rotate_data);
         cout << "row_data parm_id: " << rotate_data.parms_id() << endl;
         cout << "rotate_data scale: " << rotate_data.scale() << endl;
         //m.m = rotate_data;
