@@ -294,9 +294,11 @@ void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
 
     Mat_Extern(destination, encoder, evaluator, gal_keys, slot_count, scale, D0, D1);
     int D_dim = (dim == 1) ? D1 : D0;
-    int d_dim = (dim == 1) ? m.row[0]:m.col[0];
+    int step = (dim == 1) ? m.row[0]:m.col[0];
 
-    int cnt = (dim == 1) ? m.row[1] : m.col[1];
+    size_t* edge = (dim == 1) ? &destination.row[0]: &destination.col[0];
+
+    int d_dim = (dim == 1) ? m.row[1] : m.col[1];
     int k_max = log(D_dim / d_dim) / log(2);
     for (int k = 1; k <= k_max; k++)
     {
@@ -305,12 +307,13 @@ void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
         rotate_data.col[0] = rotate_data.col[1] = D0;
         rotate_data.row[0] = rotate_data.row[1] = D1;
 
-        Rotate1D(rotate_data, encoder, evaluator, gal_keys, dim, - k * d_dim, slot_count, scale);
+        Rotate1D(rotate_data, encoder, evaluator, gal_keys, dim, - k * step, slot_count, scale);
         
         destination.m.scale() = rotate_data.m.scale();
         evaluator.mod_switch_to_inplace(destination.m, rotate_data.m.parms_id());
 
         evaluator.add_inplace(destination.m, rotate_data.m);
+        *edge *= 2;
     }
 }
 
@@ -530,6 +533,8 @@ int main()
     decryptor.decrypt(r_m2.m, plain_result_m1);
     encoder.decode(plain_result_m1, result);
     print_vector(result, 24, 5);
+
+    cout<<r_m2.row[0]<<endl;
 
     return 0;
 }
