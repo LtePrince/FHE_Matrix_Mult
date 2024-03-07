@@ -418,7 +418,7 @@ void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     Cipher_Matrix B0;
 
     Replicate1D(m1, A0, encoder, evaluator, gal_keys, 1, n0, D0, D1, slot_count, scale);
-    Replicate1D(A0, B0, encoder, evaluator, gal_keys, 1, n0, D0, D1, slot_count, scale);
+    Replicate1D(A0, B0, encoder, evaluator, gal_keys, 0, l0, D0, D1, slot_count, scale);
 
     FHE_MatMultMain(m1, B0, destination, encoder, evaluator, gal_keys, slot_count, scale);
     Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[0], D0, D1, slot_count, scale);
@@ -446,8 +446,8 @@ void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     Cipher_Matrix A0;
     Cipher_Matrix B0;
 
-    Replicate1D(m1, A0, encoder, evaluator, gal_keys, 1, m0, D0, D1, slot_count, scale);
-    Replicate1D(m1, B0, encoder, evaluator, gal_keys, 0, n0, D0, D1, slot_count, scale);
+    Replicate1D(m1, A0, encoder, evaluator, gal_keys, 0, m0, D0, D1, slot_count, scale);
+    Replicate1D(m1, B0, encoder, evaluator, gal_keys, 1, n0, D0, D1, slot_count, scale);
 
     FHE_MatMultMain(A0, B0, destination, encoder, evaluator, gal_keys, slot_count, scale);
     Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[0], D0, D1, slot_count, scale);
