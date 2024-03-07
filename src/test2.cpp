@@ -22,6 +22,15 @@ public:
     size_t col[2] = {0};
     size_t row[2] = {0};
     Cipher_Matrix() {};
+    Cipher_Matrix& operator = (Cipher_Matrix& x)
+    {
+        col[0] = x.col[0];
+        col[1] = x.col[1];
+        row[0] = x.row[0];
+        row[1] = x.row[1];
+        m = x.m;
+        return *this;
+    }
     ~Cipher_Matrix() {};
 };
 
@@ -190,7 +199,7 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
         cout << "mask1 parm_id: " << mask1.parms_id() << endl;
         cout << endl;
 
-
+        cout << m.m.scale() << m.m.coeff_modulus_size() << endl;
         evaluator.multiply_plain(m.m, mask1, rotate_data1);
         evaluator.rescale_to_next_inplace(rotate_data1);
 
@@ -372,26 +381,33 @@ void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destin
     //�貹���A0,B0�ĳ�ʼ��
     Cipher_Matrix A0;
     Cipher_Matrix B0;
+    Cipher_Matrix Ax;
+    Cipher_Matrix Bx;
     Init_Matrix_0(A0, encoder, encryptor, slot_count, scale);
     Init_Matrix_0(B0, encoder, encryptor, slot_count, scale);
     Mat_dim_process(A0, encoder, evaluator, gal_keys, slot_count, scale);
     Mat_dim_process(B0, encoder, evaluator, gal_keys, slot_count, scale);
     RotateAlign(m1, A0, encoder, evaluator, gal_keys, 1, slot_count, scale);
     RotateAlign(m2, B0, encoder, evaluator, gal_keys, 0, slot_count, scale);
-
+    Ax = A0;
+    Bx = B0;
     int m = m1.col[1], l = m1.row[1], n = m2.row[1];
     int min_edge = (m < l) ? ((m < n) ? m : n) : ((l < n) ? l : n);
-    for (int i = 0; i < 3;i++)evaluator.mod_switch_to_next_inplace(destination.m);
+    for (int i = 0; i < 6;i++)evaluator.mod_switch_to_next_inplace(destination.m);
     for (int i = 0; i < min_edge; i++)
     {
+        Ax = A0;
+        Bx = B0;
+        Rotate1D(Ax, encoder, evaluator, gal_keys, 1, i, slot_count, scale);
+        Rotate1D(Bx, encoder, evaluator, gal_keys, 0, i, slot_count, scale);
         Ciphertext tmp;
-        evaluator.multiply(m1.m, m2.m, tmp);
+        evaluator.multiply(Ax.m, Bx.m, tmp);
         evaluator.rescale_to_next_inplace(tmp);
         tmp.scale() = destination.m.scale();
         evaluator.mod_switch_to_inplace(tmp, destination.m.parms_id());
         evaluator.add_inplace(destination.m, tmp);
-        Rotate1D(A0, encoder, evaluator, gal_keys, 1, 1, slot_count, scale);
-        Rotate1D(B0, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
+        //Rotate1D(A0, encoder, evaluator, gal_keys, 1, 1, slot_count, scale);
+        //Rotate1D(B0, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
     }
 }
 
