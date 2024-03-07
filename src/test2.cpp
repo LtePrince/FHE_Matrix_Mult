@@ -447,7 +447,7 @@ void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
         l0 = m1.row[1],
         n0 = m2.row[1];
     int D0, D1 = 0;
-    if (l0 <= m0 && l0 <= n0)
+    /*if (l0 <= m0 && l0 <= n0)
     {
         D0 = m0, D1 = n0;
     }
@@ -458,14 +458,14 @@ void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     else
     {
         m0 > n0 ? (D0 = m0, D1 = l0) : (D0 = l0, D1 = n0);
-    }
-
+    }*/
+    m0 > n0 ? (D0 = m0, D1 = l0) : (D0 = l0, D1 = n0);
     Cipher_Matrix A0;
     Cipher_Matrix B0;
 
     Replicate1D(m2, A0, encoder, evaluator, gal_keys, 1, D0, D1, slot_count, scale);
     Replicate1D(A0, B0, encoder, evaluator, gal_keys, 0, D0, D1, slot_count, scale);
-
+    evaluator.mod_switch_to_inplace(m1.m,B0.m.parms_id());
     FHE_MatMultMain(m1, B0, destination, encoder, evaluator,encryptor, gal_keys, slot_count, scale);
     Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[0], D0, D1, slot_count, scale);
 }
@@ -494,7 +494,7 @@ void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     Cipher_Matrix B0;
 
     Replicate1D(m1, A0, encoder, evaluator, gal_keys, 0, D0, D1, slot_count, scale);
-    Replicate1D(m1, B0, encoder, evaluator, gal_keys, 1, D0, D1, slot_count, scale);
+    Replicate1D(m2, B0, encoder, evaluator, gal_keys, 1, D0, D1, slot_count, scale);
     FHE_MatMultMain(A0, B0, destination, encoder, evaluator,encryptor, gal_keys, slot_count, scale);
     Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[0], D0, D1, slot_count, scale);
 }
@@ -505,7 +505,7 @@ int main()
 
     size_t poly_modulus_degree = 8192*4;
     parms.set_poly_modulus_degree(poly_modulus_degree);
-    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, { 60, 40, 40, 40, 40, 40, 40, 40,40, 60 }));
+    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, { 60, 40, 40, 40,40, 40, 40, 40, 40,40,40, 60 }));
 
     double scale = pow(2.0, 40);
 
@@ -541,7 +541,7 @@ int main()
     Cipher_Matrix r_m3;
     Init_Matrix_0(r_m3, encoder, encryptor, slot_count, scale);
     //FHE_MatMultMain(m1, m2, r_m3, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
-    Homo_mat_mult_max(m1, m2, r_m3, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
+    Homo_mat_mult_med(m1, m2, r_m3, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
     //cout << "Rotate1D:" << endl;
     //Rotate1D(m1, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
 
