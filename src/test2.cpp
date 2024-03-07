@@ -391,7 +391,7 @@ void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destin
     RotateAlign(m2, B0, encoder, evaluator, gal_keys, 0, slot_count, scale);
     Ax = A0;
     Bx = B0;
-    int m = m1.col[1], l = m1.row[1], n = m2.row[1];
+    int m = m1.col[0], l = m1.row[0], n = m2.row[0];
     int min_edge = (m < l) ? ((m < n) ? m : n) : ((l < n) ? l : n);
     for (int i = 0; i < 6;i++)evaluator.mod_switch_to_next_inplace(destination.m);
     for (int i = 0; i < min_edge; i++)
