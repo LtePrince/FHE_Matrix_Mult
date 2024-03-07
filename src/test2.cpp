@@ -284,7 +284,7 @@ void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
     }
 }
 
-void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int d_dim, int D0, int D1, int slot_count, double scale)
+void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int D0, int D1, int slot_count, double scale)
 {
     destination.m = m.m;
     destination.col[0] = m.col[0];
@@ -294,18 +294,22 @@ void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
 
     Mat_Extern(destination, encoder, evaluator, gal_keys, slot_count, scale, D0, D1);
     int D_dim = (dim == 1) ? D1 : D0;
+    int d_dim = (dim == 1) ? m.row[0]:m.col[0];
+
+    int cnt = (dim == 1) ? m.row[1] : m.col[1];
     int k_max = log(D_dim / d_dim) / log(2);
     for (int k = 1; k <= k_max; k++)
     {
-        Plaintext mask;
-        vector<double> input(slot_count, 1.0);
-        encoder.encode(input, scale, mask);
-
         Cipher_Matrix rotate_data;
-        evaluator.multiply_plain(destination.m, mask, rotate_data.m);
+        rotate_data.m = destination.m;
+        rotate_data.col[0] = rotate_data.col[1] = D0;
+        rotate_data.row[0] = rotate_data.row[1] = D1;
 
-        Rotate1D(rotate_data, encoder, evaluator, gal_keys, dim, k* d_dim, slot_count, scale);
+        Rotate1D(rotate_data, encoder, evaluator, gal_keys, dim, - k * d_dim, slot_count, scale);
         
+        destination.m.scale() = rotate_data.m.scale();
+        evaluator.mod_switch_to_inplace(destination.m, rotate_data.m.parms_id());
+
         evaluator.add_inplace(destination.m, rotate_data.m);
     }
 }
@@ -389,8 +393,8 @@ void Homo_mat_mult_min(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     Cipher_Matrix A0;
     Cipher_Matrix B0;
 
-    Replicate1D(m1, A0, encoder, evaluator, gal_keys, 1, l0, D0, D1, slot_count, scale);
-    Replicate1D(m1, B0, encoder, evaluator, gal_keys, 0, l0, D0, D1, slot_count, scale);
+    Replicate1D(m1, A0, encoder, evaluator, gal_keys, 1, D0, D1, slot_count, scale);
+    Replicate1D(m1, B0, encoder, evaluator, gal_keys, 0, D0, D1, slot_count, scale);
 
     FHE_MatMultMain(A0, B0, destination, encoder, evaluator, gal_keys, slot_count, scale);
 }
@@ -417,8 +421,8 @@ void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     Cipher_Matrix A0;
     Cipher_Matrix B0;
 
-    Replicate1D(m1, A0, encoder, evaluator, gal_keys, 1, n0, D0, D1, slot_count, scale);
-    Replicate1D(A0, B0, encoder, evaluator, gal_keys, 0, l0, D0, D1, slot_count, scale);
+    Replicate1D(m2, A0, encoder, evaluator, gal_keys, 1, D0, D1, slot_count, scale);
+    Replicate1D(A0, B0, encoder, evaluator, gal_keys, 0, D0, D1, slot_count, scale);
 
     FHE_MatMultMain(m1, B0, destination, encoder, evaluator, gal_keys, slot_count, scale);
     Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[0], D0, D1, slot_count, scale);
@@ -446,8 +450,8 @@ void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     Cipher_Matrix A0;
     Cipher_Matrix B0;
 
-    Replicate1D(m1, A0, encoder, evaluator, gal_keys, 0, m0, D0, D1, slot_count, scale);
-    Replicate1D(m1, B0, encoder, evaluator, gal_keys, 1, n0, D0, D1, slot_count, scale);
+    Replicate1D(m1, A0, encoder, evaluator, gal_keys, 0, D0, D1, slot_count, scale);
+    Replicate1D(m1, B0, encoder, evaluator, gal_keys, 1, D0, D1, slot_count, scale);
 
     FHE_MatMultMain(A0, B0, destination, encoder, evaluator, gal_keys, slot_count, scale);
     Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[0], D0, D1, slot_count, scale);
@@ -492,8 +496,14 @@ int main()
     Mat_dim_process(m1, encoder, evaluator, gal_keys, slot_count, scale);
     cout << "    + Scale of M_d_p after rescale: " << log2(m1.m.scale()) << " bits" << endl;
     //Mat_dim_process(m2, encoder, evaluator, gal_keys, slot_count, scale);
+
     cout << "Rotate1D:" << endl;
     Rotate1D(m1, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
+
+    Cipher_Matrix r_m2;
+
+    cout << "Replicate1D:" << endl;
+    Replicate1D(m1, r_m2, encoder, evaluator, gal_keys, 1, 4, 8, slot_count, scale);
 
     Cipher_Matrix r_m;
     //Init_Matrix(r_m, encoder, encryptor, slot_count, scale);
@@ -511,13 +521,15 @@ int main()
     Sum1D(m1, encoder, evaluator, gal_keys, 1, 2, m1.col[1], m1.row[1], slot_count, scale);
 
     //cout << "Extern:" << endl;
-    //Mat_Extern(m1, encoder, evaluator, gal_keys, slot_count, scale, 8, 8);
+    //Mat_Extern(m1, encoder, evaluator, gal_keys, slot_count, scale, 4, 8);
+
+    
 
     Plaintext plain_result_m1;
     vector<double> result;
-    decryptor.decrypt(r_m.m, plain_result_m1);
+    decryptor.decrypt(r_m2.m, plain_result_m1);
     encoder.decode(plain_result_m1, result);
-    print_vector(result, 16, 5);
+    print_vector(result, 24, 5);
 
     return 0;
 }
