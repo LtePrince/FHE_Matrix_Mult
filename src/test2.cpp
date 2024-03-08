@@ -568,6 +568,7 @@ void Homo_mat_mult(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destinat
 
 int main()
 {
+    freopen("in.txt", "r", stdin);
     EncryptionParameters parms(scheme_type::ckks);
 
     size_t poly_modulus_degree = 8192*4;
