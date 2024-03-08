@@ -175,7 +175,7 @@ void Mat_Extern(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Ga
 void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int step, int slot_count, double scale)
 {
     cout << "Rotate1D:" << endl;
-    int c1 = m.col[0], r1 = m.row[0];
+    int c1 = m.col[1], r1 = m.row[1];//
     int c2 = m.col[1], r2 = m.row[1];
 //    int step_t = (step % r1 + r1) % r1;
     
@@ -263,7 +263,7 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
 void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, /*int l, */int slot_count, double scale)
 {
     cout << "RotateAlign:" << endl;
-    int l = (dim == 1) ? m.col[0] : m.row[0];
+    int l = (dim == 1) ? m.col[1] : m.row[1];
     cout << l << endl << endl;
     for (int k = 0; k < l; k++)
     {
@@ -273,9 +273,9 @@ void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
 
         Plaintext mask;
         vector<double> input(slot_count, 0.0);
-        for (int i = 0; i < m.col[0]; i++)
+        for (int i = 0; i < m.col[1]; i++)//
         {
-            for (int j = 0; j < m.row[0]; j++)
+            for (int j = 0; j < m.row[1]; j++)//
             {
                 if (dim == 1 && i == k)
                 {
