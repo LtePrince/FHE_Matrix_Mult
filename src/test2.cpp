@@ -168,7 +168,7 @@ void Mat_Extern(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Ga
         evaluator.add_inplace(m.m, row_data);
     }
     m.col[1] = D0;
-    m.col[1] = D1;
+    m.row[1] = D1;
 }
 
 void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int step, int slot_count, double scale)
@@ -177,9 +177,10 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
     int c1 = m.col[0], r1 = m.row[0];
     int c2 = m.col[1], r2 = m.row[1];
 //    int step_t = (step % r1 + r1) % r1;
-    int step_t = (step + r1 - 1) % r1 +1;
+    
     if (dim == 1)//ˮƽ������ת��������Ϊ��
     {
+        int step_t = (step + r1 - 1) % r1 + 1;
         Plaintext mask1;
         Plaintext mask2;
         vector<double> input1(slot_count, 0.0);
@@ -224,6 +225,7 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
     }
     else if (dim == 0)//��ֱ������ת��������Ϊ��
     {
+        int step_t = (step + c1 - 1) % c1 + 1;
         Plaintext mask1;
         Plaintext mask2;
         vector<double> input1(slot_count, 0.0);
@@ -263,10 +265,12 @@ void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
 {
     cout << "RotateAlign:" << endl;
     int l = (dim == 1) ? m.col[0] : m.row[0];
+    cout << l << endl << endl;
     for (int k = 0; k < l; k++)
     {
         Cipher_Matrix pm;
-        pm.col[0] = m.col[0], pm.col[1] = m.col[1], pm.row[0] = m.row[0], pm.row[1] = m.row[1];
+        pm.col[0] = m.col[0], pm.col[1] = m.col[1], pm.col[2] = m.col[2],
+            pm.row[0] = m.row[0], pm.row[1] = m.row[1], pm.row[2] = m.row[2];
 
         Plaintext mask;
         vector<double> input(slot_count, 0.0);
@@ -319,13 +323,12 @@ void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
 void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int D0, int D1, int slot_count, double scale)
 {
     cout << "Replicate1D:" << endl;
-    destination.m = m.m;
-    destination.col[0] = m.col[0];
-    destination.col[1] = D0;
-    destination.col[2] = m.col[2];
-    destination.row[0] = m.row[0];
-    destination.row[1] = D1;
-    destination.row[2] = m.row[2];
+    destination = m;
+
+    cout << endl;
+    cout << destination.col[0] << " " << destination.col[1] << " " << destination.col[2] << endl;
+    cout << destination.row[0] << " " << destination.row[1] << " " << destination.row[2] << endl;
+    cout << endl;
 
     Mat_Extern(destination, encoder, evaluator, gal_keys, slot_count, scale, D0, D1);
     int D_dim = (dim == 1) ? D1 : D0;
@@ -398,10 +401,21 @@ void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destin
     Cipher_Matrix B0;
     Cipher_Matrix Ax;
     Cipher_Matrix Bx;
-    Init_Matrix_0(A0, m1.col[0], m1.row[0], encoder, encryptor, slot_count, scale);
-    Init_Matrix_0(B0, m2.col[0], m2.row[0], encoder, encryptor, slot_count, scale);
-    Mat_dim_process(A0, encoder, evaluator, gal_keys, slot_count, scale);
-    Mat_dim_process(B0, encoder, evaluator, gal_keys, slot_count, scale);
+    Init_Matrix_0(A0, m1.col[1], m1.row[1], encoder, encryptor, slot_count, scale);
+    Init_Matrix_0(B0, m2.col[1], m2.row[1], encoder, encryptor, slot_count, scale);
+    A0.col[0] = m1.col[0];
+    A0.col[2] = m1.col[2];
+    A0.row[0] = m1.row[0];
+    A0.row[2] = m1.row[2];
+    B0.col[0] = m1.col[0];
+    B0.col[2] = m2.col[2];
+    B0.row[0] = m2.row[0];
+    B0.row[2] = m2.row[2];
+
+    cout << endl;
+    cout << A0.col[0] << " " << A0.col[1] << " " << A0.col[2] << endl;
+    cout << A0.row[0] << " " << A0.row[1] << " " << A0.row[2] << endl;
+    cout << endl;
     RotateAlign(m1, A0, encoder, evaluator, gal_keys, 1, slot_count, scale);
     RotateAlign(m2, B0, encoder, evaluator, gal_keys, 0, slot_count, scale);
     
@@ -412,7 +426,7 @@ void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destin
     evaluator.mod_switch_to_inplace(destination.m, A0.m.parms_id());
     evaluator.mod_switch_to_next_inplace(destination.m);
     evaluator.mod_switch_to_next_inplace(destination.m);
-    for (int i = 0; i < min_edge; i++)
+    for (int i = 0; i < 1; i++)
     {
         Ax = A0;
         Bx = B0;
@@ -423,10 +437,12 @@ void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destin
         evaluator.rescale_to_next_inplace(tmp);
         tmp.scale() = destination.m.scale();
         evaluator.mod_switch_to_inplace(tmp, destination.m.parms_id());
-        evaluator.add_inplace(destination.m, tmp);
+        destination.m = tmp;
+        //evaluator.add_inplace(destination.m, tmp);
         //Rotate1D(A0, encoder, evaluator, gal_keys, 1, 1, slot_count, scale);
         //Rotate1D(B0, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
     }
+    //destination.m = B0.m;
 }
 
 void Homo_mat_mult_min(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator,Encryptor& encryptor,  GaloisKeys& gal_keys, int slot_count, double scale)
@@ -603,8 +619,16 @@ int main()
     print_vector(result_Mat_dim2, 24, 5);
     
     Cipher_Matrix r_m3;
+    Init_Matrix_0(r_m3, 4, 4, encoder, encryptor, slot_count, scale);
     //FHE_MatMultMain(m1, m2, r_m3, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
     Homo_mat_mult(m1, m2, r_m3, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
+    //Replicate1D(m1, r_m3, encoder, evaluator, gal_keys, 1, 4, 4, slot_count, scale);
+
+    cout << endl;
+    cout << r_m3.col[0] << " " << r_m3.col[1] << " " << r_m3.col[2] << endl;
+    cout << r_m3.row[0] << " " << r_m3.row[1] << " " << r_m3.row[2] << endl;
+    cout << endl;
+
     //cout << "Rotate1D:" << endl;
     //Rotate1D(m1, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
 
