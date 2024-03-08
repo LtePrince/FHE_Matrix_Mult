@@ -19,15 +19,17 @@ class Cipher_Matrix
 {
 public:
     Ciphertext m;
-    size_t col[2] = {0};
-    size_t row[2] = {0};
+    size_t col[3] = {0};
+    size_t row[3] = {0};
     Cipher_Matrix() {};
     Cipher_Matrix& operator = (Cipher_Matrix& x)
     {
         col[0] = x.col[0];
         col[1] = x.col[1];
+        col[2] = x.col[2];
         row[0] = x.row[0];
         row[1] = x.row[1];
+        row[2] = x.row[2];
         m = x.m;
         return *this;
     }
@@ -38,6 +40,8 @@ void Init_Matrix(Cipher_Matrix &m, CKKSEncoder &encoder, Encryptor &encryptor, i
 {
     cout << "Please input the number of columns and rows of the Matrix:" << endl;
     cin >> m.col[0] >> m.row[0];
+    m.col[2] = m.col[0];
+    m.row[2] = m.row[0];
     //m.col[0] = m.row[0] = 3;
     int tmp = 0;
     vector<double> input;
@@ -317,9 +321,11 @@ void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
     cout << "Replicate1D:" << endl;
     destination.m = m.m;
     destination.col[0] = m.col[0];
-    destination.col[1] = m.col[1];
+    destination.col[1] = D0;
+    destination.col[2] = m.col[2];
     destination.row[0] = m.row[0];
-    destination.row[1] = m.row[1];
+    destination.row[1] = D1;
+    destination.row[2] = m.row[2];
 
     Mat_Extern(destination, encoder, evaluator, gal_keys, slot_count, scale, D0, D1);
     int D_dim = (dim == 1) ? D1 : D0;
@@ -401,7 +407,7 @@ void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destin
     
     Ax = A0;
     Bx = B0;
-    int m = m1.col[0], l = m1.row[0], n = m2.row[0];
+    int m = m1.col[2], l = m1.row[2], n = m2.row[2];
     int min_edge = (m < l) ? ((m < n) ? m : n) : ((l < n) ? l : n);
     evaluator.mod_switch_to_inplace(destination.m, A0.m.parms_id());
     evaluator.mod_switch_to_next_inplace(destination.m);
@@ -452,7 +458,11 @@ void Homo_mat_mult_min(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     Replicate1D(m1, A0, encoder, evaluator, gal_keys, 1, D0, D1, slot_count, scale);
     Replicate1D(m2, B0, encoder, evaluator, gal_keys, 0, D0, D1, slot_count, scale);
 
+    cout << A0.col[0] << " " << A0.col[1] << " " << A0.col[2] << endl;;
+    cout << A0.row[0] << " " << A0.row[1] << " " << A0.row[2] << endl;;
 
+    cout << B0.col[0] << " " << B0.col[1] << " " << B0.col[2] << endl;;
+    cout << B0.row[0] << " " << B0.row[1] << " " << B0.row[2] << endl;;
 
     FHE_MatMultMain(A0, B0, destination, encoder, evaluator, encryptor,gal_keys, slot_count, scale);
 }
@@ -579,6 +589,19 @@ int main()
     Mat_dim_process(m1, encoder, evaluator, gal_keys, slot_count, scale);
     cout << "    + Scale of M_d_p after rescale: " << log2(m1.m.scale()) << " bits" << endl;
     Mat_dim_process(m2, encoder, evaluator, gal_keys, slot_count, scale);
+    
+    Plaintext plain_result_Mat_dim;
+    vector<double> result_Mat_dim;
+    decryptor.decrypt(m1.m, plain_result_Mat_dim);
+    encoder.decode(plain_result_Mat_dim, result_Mat_dim);
+    print_vector(result_Mat_dim, 24, 5);
+    
+    Plaintext plain_result_Mat_dim2;
+    vector<double> result_Mat_dim2;
+    decryptor.decrypt(m2.m, plain_result_Mat_dim2);
+    encoder.decode(plain_result_Mat_dim2, result_Mat_dim2);
+    print_vector(result_Mat_dim2, 24, 5);
+    
     Cipher_Matrix r_m3;
     //FHE_MatMultMain(m1, m2, r_m3, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
     Homo_mat_mult(m1, m2, r_m3, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
