@@ -37,16 +37,17 @@ public:
 void Init_Matrix(Cipher_Matrix &m, CKKSEncoder &encoder, Encryptor &encryptor, int slot_count, double scale)
 {
     cout << "Please input the number of columns and rows of the Matrix:" << endl;
-    //cin >> m.col[0] >> m.row[0];
-    m.col[0] = m.row[0] = 3;
+    cin >> m.col[0] >> m.row[0];
+    //m.col[0] = m.row[0] = 3;
     int tmp = 0;
     vector<double> input;
     Plaintext x_plain;
     input.reserve(slot_count);
     cout << "Please input the data of the Matrix:" << endl;
-    for (int i = 0; i < 9; i++)
+    for (int i = 0; i < m.col[0] * m.row[0]; i++)
     {
-        input.push_back(i + 1);
+        cin >> tmp;
+        input.push_back(tmp);
     }
     print_vector(input, 3, 7);
     cout << endl;
@@ -56,7 +57,7 @@ void Init_Matrix(Cipher_Matrix &m, CKKSEncoder &encoder, Encryptor &encryptor, i
 
 void Init_Matrix_0(Cipher_Matrix& m, int col, int row, CKKSEncoder& encoder, Encryptor& encryptor, int slot_count, double scale)
 {
-    cout << "Please input the number of columns and rows of the Matrix:" << endl;
+    cout << "the number of columns and rows of the Matrix0 is " << col << " and " << row << endl;
     //cin >> m.col[0] >> m.row[0];
     m.col[0] = m.col[1] = col;
     m.row[0] = m.row[1] = row;
@@ -81,6 +82,7 @@ int RoundUP_2_Power(int num)
 void Mat_dim_process(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator &evaluator, GaloisKeys &gal_keys, int slot_count, double scale)
 {
     //�ݲ����о����С�Ƿ񳬹����ݲ۵���֤
+    cout << "Mat_dim_process:" << endl;
     m.col[1] = RoundUP_2_Power(m.col[0]);
     m.row[1] = RoundUP_2_Power(m.row[0]);
     int a = m.row[1], b = m.row[0];
@@ -129,6 +131,7 @@ void Mat_dim_process(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator &evaluato
 void Mat_Extern(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count, double scale, int D0, int D1)
 {
     //�ݲ����о����С�Ƿ񳬹����ݲ۵���֤
+    cout << "Mat_Extern:" << endl;
     int a = D1, b = m.row[1];
     int i = m.col[0] - 1;
     for (; i > 0; i--)
@@ -166,6 +169,7 @@ void Mat_Extern(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Ga
 
 void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int step, int slot_count, double scale)
 {
+    cout << "Rotate1D:" << endl;
     int c1 = m.col[0], r1 = m.row[0];
     int c2 = m.col[1], r2 = m.row[1];
 //    int step_t = (step % r1 + r1) % r1;
@@ -253,6 +257,7 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
 
 void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, /*int l, */int slot_count, double scale)
 {
+    cout << "RotateAlign:" << endl;
     int l = (dim == 1) ? m.col[0] : m.row[0];
     for (int k = 0; k < l; k++)
     {
@@ -309,6 +314,7 @@ void RotateAlign(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& enco
 
 void Replicate1D(Cipher_Matrix& m, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int D0, int D1, int slot_count, double scale)
 {
+    cout << "Replicate1D:" << endl;
     destination.m = m.m;
     destination.col[0] = m.col[0];
     destination.col[1] = m.col[1];
@@ -344,6 +350,7 @@ void Sum1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisK
 {
     //Sum1D����D0,D1�ɴ�m�л�ȡ
     //δ��scale��parm_id�ĵ���
+    cout << "Sum1D:" << endl;
     for (int k = log(D1 / d_dim) / log(2); k > 0; k--)
     {
 /*        Plaintext mask;
@@ -380,6 +387,7 @@ void Sum1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, GaloisK
 void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator,Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale)
 {
     //�貹���A0,B0�ĳ�ʼ��
+    cout << "FHE_MatMultMain:" << endl;
     Cipher_Matrix A0;
     Cipher_Matrix B0;
     Cipher_Matrix Ax;
