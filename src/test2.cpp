@@ -398,6 +398,7 @@ void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destin
     Mat_dim_process(B0, encoder, evaluator, gal_keys, slot_count, scale);
     RotateAlign(m1, A0, encoder, evaluator, gal_keys, 1, slot_count, scale);
     RotateAlign(m2, B0, encoder, evaluator, gal_keys, 0, slot_count, scale);
+    
     Ax = A0;
     Bx = B0;
     int m = m1.col[0], l = m1.row[0], n = m2.row[0];
@@ -450,6 +451,8 @@ void Homo_mat_mult_min(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
 
     Replicate1D(m1, A0, encoder, evaluator, gal_keys, 1, D0, D1, slot_count, scale);
     Replicate1D(m2, B0, encoder, evaluator, gal_keys, 0, D0, D1, slot_count, scale);
+
+
 
     FHE_MatMultMain(A0, B0, destination, encoder, evaluator, encryptor,gal_keys, slot_count, scale);
 }
@@ -582,19 +585,18 @@ int main()
     //cout << "Rotate1D:" << endl;
     //Rotate1D(m1, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
 
-    Cipher_Matrix r_m2;
+   /* Cipher_Matrix r_m2;*/
 
     //cout << "Replicate1D:" << endl;
     //Replicate1D(m1, r_m2, encoder, evaluator, gal_keys, 1, 4, 8, slot_count, scale);
 
-    Cipher_Matrix r_m;
-    //Init_Matrix(r_m, encoder, encryptor, slot_count, scale);
+    /*Cipher_Matrix r_m;
     r_m.col[0] = m1.col[0], r_m.col[1] = m1.col[1], 
     r_m.row[0] = m1.row[0], r_m.row[1] = m1.row[1];
     Plaintext zero_p;
     vector<double> zero(slot_count, 0.0);
     encoder.encode(zero, scale, zero_p);
-    encryptor.encrypt(zero_p, r_m.m);
+    encryptor.encrypt(zero_p, r_m.m);*/
 
     //cout << "RotateAlign:" << endl;
     //RotateAlign(m1, r_m, encoder, evaluator, gal_keys, 1, slot_count, scale);
@@ -612,8 +614,6 @@ int main()
     decryptor.decrypt(r_m3.m, plain_result_m1);
     encoder.decode(plain_result_m1, result);
     print_vector(result, 24, 5);
-
-    cout<<r_m2.row[0]<<endl;
 
     return 0;
 }
