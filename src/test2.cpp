@@ -407,14 +407,14 @@ void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destin
     A0.col[2] = m1.col[2];
     A0.row[0] = m1.row[0];
     A0.row[2] = m1.row[2];
-    B0.col[0] = m1.col[0];
+    B0.col[0] = m2.col[0];
     B0.col[2] = m2.col[2];
     B0.row[0] = m2.row[0];
     B0.row[2] = m2.row[2];
 
     cout << endl;
-    cout << A0.col[0] << " " << A0.col[1] << " " << A0.col[2] << endl;
-    cout << A0.row[0] << " " << A0.row[1] << " " << A0.row[2] << endl;
+    cout << B0.col[0] << " " << B0.col[1] << " " << B0.col[2] << endl;
+    cout << B0.row[0] << " " << B0.row[1] << " " << B0.row[2] << endl;
     cout << endl;
     RotateAlign(m1, A0, encoder, evaluator, gal_keys, 1, slot_count, scale);
     RotateAlign(m2, B0, encoder, evaluator, gal_keys, 0, slot_count, scale);
@@ -426,7 +426,7 @@ void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destin
     evaluator.mod_switch_to_inplace(destination.m, A0.m.parms_id());
     evaluator.mod_switch_to_next_inplace(destination.m);
     evaluator.mod_switch_to_next_inplace(destination.m);
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < min_edge; i++)
     {
         Ax = A0;
         Bx = B0;
@@ -437,8 +437,8 @@ void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destin
         evaluator.rescale_to_next_inplace(tmp);
         tmp.scale() = destination.m.scale();
         evaluator.mod_switch_to_inplace(tmp, destination.m.parms_id());
-        destination.m = tmp;
-        //evaluator.add_inplace(destination.m, tmp);
+        //destination.m = tmp;
+        evaluator.add_inplace(destination.m, tmp);
         //Rotate1D(A0, encoder, evaluator, gal_keys, 1, 1, slot_count, scale);
         //Rotate1D(B0, encoder, evaluator, gal_keys, 0, 1, slot_count, scale);
     }
