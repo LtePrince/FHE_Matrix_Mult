@@ -4,7 +4,7 @@
 
 using namespace std;
 using namespace seal;
-
+RelinKeys relin_keys;
 class Plain_Matrix
 {
 public:
@@ -212,13 +212,12 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
         cout << m.m.scale() << m.m.coeff_modulus_size() << endl;
         evaluator.multiply_plain(m.m, mask1, rotate_data1);
         evaluator.rescale_to_next_inplace(rotate_data1);
-
+        evaluator.relinearize_inplace(rotate_data1,relin_keys);
         evaluator.multiply_plain(m.m, mask2, rotate_data2);
         evaluator.rescale_to_next_inplace(rotate_data2);
-
+        evaluator.relinearize_inplace(rotate_data2,relin_keys);
         evaluator.rotate_vector_inplace(rotate_data1, -(r1-step_t), gal_keys);
         evaluator.rotate_vector_inplace(rotate_data2, step_t, gal_keys);
-
         evaluator.add_inplace(rotate_data1, rotate_data2);
         m.m = rotate_data1;
 
@@ -249,13 +248,12 @@ void Rotate1D(Cipher_Matrix& m, CKKSEncoder& encoder, Evaluator& evaluator, Galo
 
         evaluator.multiply_plain(m.m, mask1, rotate_data1);
         evaluator.rescale_to_next_inplace(rotate_data1);
-
+        evaluator.relinearize_inplace(rotate_data1, relin_keys);
         evaluator.multiply_plain(m.m, mask2, rotate_data2);
         evaluator.rescale_to_next_inplace(rotate_data2);
-
+        evaluator.relinearize_inplace(rotate_data2, relin_keys);
         evaluator.rotate_vector_inplace(rotate_data1, -(c1 - step_t)*r2, gal_keys);
         evaluator.rotate_vector_inplace(rotate_data2, step_t*r2, gal_keys);
-
         evaluator.add_inplace(rotate_data1, rotate_data2);
         m.m = rotate_data1;
     }
@@ -585,7 +583,7 @@ int main()
     auto secret_key = keygen.secret_key();
     PublicKey public_key;
     keygen.create_public_key(public_key);
-    RelinKeys relin_keys;
+    //RelinKeys relin_keys;
     keygen.create_relin_keys(relin_keys);
     GaloisKeys gal_keys;
     keygen.create_galois_keys(gal_keys);
