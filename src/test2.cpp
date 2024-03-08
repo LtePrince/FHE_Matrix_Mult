@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS 1
 #include<iostream>
 #include "seal/seal.h"
 #include "include/examples.h"
@@ -506,11 +507,11 @@ void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     Cipher_Matrix A0;
     Cipher_Matrix B0;
 
-    Replicate1D(m2, A0, encoder, evaluator, gal_keys, 1, D0, D1, slot_count, scale);
+    Replicate1D(m2, A0, encoder, evaluator, gal_keys, 1, m2.col[1], D1, slot_count, scale);
     Replicate1D(A0, B0, encoder, evaluator, gal_keys, 0, D0, D1, slot_count, scale);
     evaluator.mod_switch_to_inplace(m1.m,B0.m.parms_id());
     FHE_MatMultMain(m1, B0, destination, encoder, evaluator,encryptor, gal_keys, slot_count, scale);
-    Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[0], D0, D1, slot_count, scale);
+    Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[2], D0, D1, slot_count, scale);
 }
 
 void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale)
@@ -542,7 +543,7 @@ void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     Replicate1D(m1, A0, encoder, evaluator, gal_keys, 0, D0, D1, slot_count, scale);
     Replicate1D(m2, B0, encoder, evaluator, gal_keys, 1, D0, D1, slot_count, scale);
     FHE_MatMultMain(A0, B0, destination, encoder, evaluator,encryptor, gal_keys, slot_count, scale);
-    Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[0], D0, D1, slot_count, scale);
+    Sum1D(destination, encoder, evaluator, gal_keys, 1, m2.row[2], D0, D1, slot_count, scale);
 }
 
 void Homo_mat_mult(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale)
