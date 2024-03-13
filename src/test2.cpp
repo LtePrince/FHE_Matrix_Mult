@@ -89,6 +89,11 @@ int main()
     print_vector(Ut, 16, 5);
 
 /*--------------------------------RotateAlign----------------------------------------*/
+    cout << "    + The scale of x_cipher before Rotate: " << log2(x_cipher1.scale()) << endl;
+    cout << "    + The parm_id of x_cipher before Rotate: " << x_cipher1.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before Rotate: " << x_cipher1.coeff_modulus_size() << endl;
+    cout << endl;
+
     int dim = 0;
     Ciphertext rotateAlign_result;
     if(dim == 1)
@@ -195,6 +200,10 @@ int main()
             rotateAlign_result = x_cipher2;
         }
     }
+
+    cout << "    + The scale of x_cipher after Rotate: " << log2(rotateAlign_result.scale()) << endl;
+    cout << "    + The parm_id of x_cipher after Rotate: " << rotateAlign_result.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before Rotate: " << rotateAlign_result.coeff_modulus_size() << endl;
     
     
 /*----------------------------Print the Result----------------------------------------*/
