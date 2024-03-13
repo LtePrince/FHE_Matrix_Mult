@@ -564,7 +564,7 @@ void Homo_mat_mult(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destinat
     }
 }
 
-int main()
+int Mult4x4()
 {
     freopen("in.txt", "r", stdin);
     EncryptionParameters parms(scheme_type::ckks);
