@@ -153,7 +153,8 @@ int main()
             encoder.encode(Utk_1, scale, Utk_plain_1);
             evaluator.multiply_plain_inplace(rotateAlign_result, Utk_plain_1);
 
-            for(int k = 1; k < n; k++)
+            int d_min = l>n?n:l;
+            for(int k = 1; k < d_min; k++)
             {
                 flag = 0;
                 Ciphertext tmp;
