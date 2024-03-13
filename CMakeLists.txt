@@ -43,3 +43,6 @@ add_subdirectory(lib/SEAL) # SEAL
 
 add_executable(test2 src/test2.cpp)
 target_link_libraries(test2 seal)
+
+add_executable(test3 src/test3.cpp)
+target_link_libraries(test3 seal)
