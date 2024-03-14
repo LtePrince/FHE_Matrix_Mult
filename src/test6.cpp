@@ -104,6 +104,9 @@ int main()
 
     Cipher_Matrix x_cipher2;
     Init_Matrix(x_cipher2, l, n, D0, D1, encoder, encryptor, slot_count, scale);
+    
+/*-------------------------Matrix_Multiply-------------------------------------------------*/
+    
     Cipher_Matrix dest;
     time_t t1, t2;
     t1 = time(NULL);
@@ -124,6 +127,7 @@ int main()
     
 /*----------------------------Print the Result----------------------------------------*/
 
+    cout << "    Result:" << endl;
     Plaintext plain_result_m1;
     vector<double> result;
     decryptor.decrypt(dest.m, plain_result_m1);
@@ -273,6 +277,7 @@ void Rotate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder& en
     evaluator.rescale_to_next_inplace(destination.m);
 }
 
+
 void RotateAlignNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int slot_count, double scale)
 {
     cout << "  RotateAlignNew:" << endl;
@@ -418,6 +423,7 @@ void RotateAlignNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder&
 
 void Sum1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count)
 {
+    cout << "  Sum1DNew:" << endl;
     destination = src;
     int D0 = src.col[1];
     int D1 = src.row[1];
@@ -441,19 +447,39 @@ void Sum1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, Evaluator& evaluat
     }
 }
 
+
 void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale)
 {
-    cout << "FHE_MatMultMain:" << endl;
+    cout << "  FHE_MatMultMain:" << endl;
     Cipher_Matrix A0;
     Cipher_Matrix B0;
     Cipher_Matrix Ax;
     Cipher_Matrix Bx;
+
+    destination.col[0] = m1.col[0];
+    destination.row[0] = m2.row[0];
+    destination.col[1] = m1.col[1];
+    destination.row[1] = m2.row[1];
+
+    cout << "    + The scale of x_cipher before RotateAlign: " << log2(m1.m.scale()) << endl;
+    cout << "    + The parm_id of x_cipher before RotateAlign: " << m1.m.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before RotateAlign: " << m1.m.coeff_modulus_size() << endl;
+    cout << endl;
+
     RotateAlignNew(m1, A0, encoder, evaluator, gal_keys, 1, slot_count, scale);
     RotateAlignNew(m2, B0, encoder, evaluator, gal_keys, 0, slot_count, scale);
-    int m = m1.col[1], l = m1.row[1], n = m2.row[1];
+    
+    cout << "    + The scale of x_cipher after RotateAlign: " << log2(A0.m.scale()) << endl;
+    cout << "    + The parm_id of x_cipher after RotateAlign: " << A0.m.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before RotateAlign: " << A0.m.coeff_modulus_size() << endl;
+    cout << endl;
+    
+    int m = m1.col[0], l = m1.row[0], n = m2.row[0];
     int min_edge = (m < l) ? ((m < n) ? m : n) : ((l < n) ? l : n);
     for (int i = 0; i < min_edge; i++)
     {
+        cout << "    for loop:" << i << endl;
+
         Rotate1DNew(A0, Ax, encoder, evaluator, gal_keys, 1, i, slot_count, scale);
         Rotate1DNew(B0, Bx, encoder, evaluator, gal_keys, 0, i, slot_count, scale);
         Ciphertext tmp;
@@ -464,57 +490,74 @@ void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destin
     evaluator.rescale_to_next_inplace(destination.m);
 }
 
+
 void Homo_mat_mult_min(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale)
 {
-    int m0 = m1.col[1],
-        l0 = m1.row[1],
-        n0 = m2.row[1];
-    int D0, D1 = 0;
-    D0 = m0;
-    D1 = n0;
-
     Cipher_Matrix A0;
     Cipher_Matrix B0;
+
+    cout << "    + The scale of x_cipher before Replicate1D: " << log2(m1.m.scale()) << endl;
+    cout << "    + The parm_id of x_cipher before Replicate1D: " << m1.m.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before Replicate1D: " << m1.m.coeff_modulus_size() << endl;
+    cout << endl;
 
     Replicate1DNew(m1, A0,1, encoder, evaluator, gal_keys);
     Replicate1DNew(m2, B0,0, encoder, evaluator, gal_keys);
 
+    cout << "    + The scale of x_cipher after Replicate1D: " << log2(A0.m.scale()) << endl;
+    cout << "    + The parm_id of x_cipher after Replicate1D: " << A0.m.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before Replicate1D: " << A0.m.coeff_modulus_size() << endl;
+    cout << endl;
+
     FHE_MatMultMain(A0, B0, destination, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
 }
 
+
 void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale)
 {
-    int m0 = m1.col[1],
-        l0 = m1.row[1],
-        n0 = m2.row[1];
-    int D0, D1 = 0;
-    m0 > n0 ? (D0 = m0, D1 = l0) : (D0 = l0, D1 = n0);
-
     Cipher_Matrix A0;
     Cipher_Matrix B0;
     Cipher_Matrix tmp;
 
+    cout << "    + The scale of x_cipher before Replicate1D: " << log2(m1.m.scale()) << endl;
+    cout << "    + The parm_id of x_cipher before Replicate1D: " << m1.m.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before Replicate1D: " << m1.m.coeff_modulus_size() << endl;
+    cout << endl;
+
+    //need to judge which matrix is smaller!!!!
     Replicate1DNew(m2, A0, 1, encoder, evaluator, gal_keys);
     Replicate1DNew(A0, B0, 0, encoder, evaluator, gal_keys);
+
+    cout << "    + The scale of x_cipher after Replicate1D: " << log2(B0.m.scale()) << endl;
+    cout << "    + The parm_id of x_cipher after Replicate1D: " << B0.m.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before Replicate1D: " << B0.m.coeff_modulus_size() << endl;
+    cout << endl;
+
     evaluator.mod_switch_to_inplace(m1.m, B0.m.parms_id());
     FHE_MatMultMain(m1, B0, tmp, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
-    Sum1DNew(tmp, destination, evaluator, gal_keys,  slot_count);
+    //Sum1DNew(tmp, destination, evaluator, gal_keys,  slot_count);
 }
+
 
 void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale)
 {
-    int m0 = m1.col[1],
-        l0 = m1.row[1],
-        n0 = m2.row[1];
-    int D0, D1 = 0;
-    D0 = D1 = l0;
-
     Cipher_Matrix A0;
     Cipher_Matrix B0;
     Cipher_Matrix tmp;
 
+    cout << "    + The scale of x_cipher before Replicate1D: " << log2(m1.m.scale()) << endl;
+    cout << "    + The parm_id of x_cipher before Replicate1D: " << m1.m.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before Replicate1D: " << m1.m.coeff_modulus_size() << endl;
+    cout << endl;
+
     Replicate1DNew(m1, A0,0, encoder, evaluator, gal_keys);
     Replicate1DNew(m2, B0,1, encoder, evaluator, gal_keys);
+
+    cout << "    + The scale of x_cipher after Replicate1D: " << log2(A0.m.scale()) << endl;
+    cout << "    + The parm_id of x_cipher after Replicate1D: " << A0.m.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before Replicate1D: " << A0.m.coeff_modulus_size() << endl;
+    cout << endl;
+
     FHE_MatMultMain(A0, B0, tmp, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
-    Sum1DNew(tmp, destination, evaluator, gal_keys, slot_count);
+    //Sum1DNew(tmp, destination, evaluator, gal_keys, slot_count);
 }

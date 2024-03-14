@@ -52,3 +52,6 @@ target_link_libraries(test4 seal)
 
 add_executable(test5 src/test5.cpp)
 target_link_libraries(test5 seal)
+
+add_executable(test6 src/test6.cpp)
+target_link_libraries(test6 seal)
