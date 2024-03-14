@@ -37,6 +37,8 @@ void Rotate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder& en
 
 void RotateAlignNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, RelinKeys relin_keys, int dim, int slot_count, double scale);
 
+void Sum1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count);
+
 int main()
 {
     EncryptionParameters parms(scheme_type::ckks);
@@ -375,7 +377,7 @@ void RotateAlignNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder&
             evaluator.rescale_to_next_inplace(destination.m);
         }
         else{
-            destination = src;
+            destination = src;//need to mult a plain full of 1.0!!!!!
         }
     }
     else if(dim == 0)
@@ -453,5 +455,31 @@ void RotateAlignNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder&
         else{
             destination = src;
         }
+    }
+}
+
+
+void Sum1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count)
+{
+    destination = src;
+    int D0 = src.col[1];
+    int D1 = src.row[1];
+    int d_dim = D0 * D1;
+    int step = 1;//question: log2(slot_count/d_dim) is an interger?
+    for(int k = 1; k <= log2(slot_count/d_dim); k++)
+    {
+        Ciphertext tmp;
+        evaluator.rotate_vector(destination.m, -step*d_dim, gal_keys, tmp);
+        evaluator.add_inplace(destination.m, tmp);
+        step *= 2;
+    }
+    int k = log2(D1/src.row[0]);
+    step = pow(2, k - 1);
+    for(; k >= 1; k--)
+    {
+        Ciphertext tmp;
+        evaluator.rotate_vector(destination.m, - step * src.row[0], gal_keys, tmp);
+        evaluator.add_inplace(destination.m, tmp);
+        step /= 2;
     }
 }
