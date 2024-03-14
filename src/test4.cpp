@@ -109,7 +109,23 @@ int main()
     cout << "    + The parm_id of x_cipher after Replicate1D: " << Replicate1D_result.m.parms_id() << endl;
     cout << "    + The coeff_modulus_size of x_cipher before Replicate1D: " << Replicate1D_result.m.coeff_modulus_size() << endl;
     
-    
+
+/*-------------------------------Sum1D------------------------------------------------*/
+    /*for(int k = log2(D1/x_cipher1.row[0]); k >= 1; k--)
+    {
+        Ciphertext tmp;
+        evaluator.rotate_vector(Replicate1D_result.m, -step*d_dim, gal_keys, tmp);
+        evaluator.add_inplace(Replicate1D_result.m, tmp);
+        step /= 2;
+    }*/
+
+
+
+
+
+
+
+
 /*----------------------------Print the Result----------------------------------------*/
 
     Plaintext plain_result_m1;
