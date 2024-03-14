@@ -31,6 +31,8 @@ public:
 
 void Init_Matrix(Cipher_Matrix& src, int col, int row, int D0, int D1, CKKSEncoder &encoder, Encryptor &encryptor, int slot_count, double scale);
 
+void Replicate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, int dim, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, RelinKeys relin_keys);
+
 void Rotate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, RelinKeys relin_keys, int dim, int step, int slot_count, double scale);
 
 void RotateAlignNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, RelinKeys relin_keys, int dim, int slot_count, double scale);
@@ -91,9 +93,27 @@ int main()
 
     Cipher_Matrix x_cipher2;
     Init_Matrix(x_cipher2, l, n, D0, D1, encoder, encryptor, slot_count, scale);
-/*---------------------------------RotateAlign----------------------------------------*/
+/*--------------------------------Replicate1D----------------------------------------*/
+
     time_t t1, t2;
     t1 = time(NULL);
+
+    cout << "    + The scale of x_cipher before Replicate1D: " << log2(x_cipher1.m.scale()) << endl;
+    cout << "    + The parm_id of x_cipher before Replicate1D: " << x_cipher1.m.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before Replicate1D: " << x_cipher1.m.coeff_modulus_size() << endl;
+    cout << endl;
+
+    Cipher_Matrix Replicate1D_result1;
+    Replicate1DNew(x_cipher1, Replicate1D_result1, 1, encoder, evaluator, gal_keys, relin_keys);
+    Cipher_Matrix Replicate1D_result2;
+    Replicate1DNew(x_cipher2, Replicate1D_result2, 0, encoder, evaluator, gal_keys, relin_keys);
+
+    cout << "    + The scale of x_cipher after Replicate1D: " << log2(Replicate1D_result1.m.scale()) << endl;
+    cout << "    + The parm_id of x_cipher after Replicate1D: " << Replicate1D_result1.m.parms_id() << endl;
+    cout << "    + The coeff_modulus_size of x_cipher before Replicate1D: " << Replicate1D_result1.m.coeff_modulus_size() << endl;
+    cout << endl;
+
+/*---------------------------------RotateAlign----------------------------------------*/
     
     cout << "    + The scale of x_cipher before RotateAlign: " << log2(x_cipher1.m.scale()) << endl;
     cout << "    + The parm_id of x_cipher before RotateAlign: " << x_cipher1.m.parms_id() << endl;
@@ -101,33 +121,14 @@ int main()
     cout << endl;
 
     Cipher_Matrix rotateAlign_result1;
-    RotateAlignNew(x_cipher1, rotateAlign_result1, encoder, evaluator, gal_keys, relin_keys, 1, slot_count, scale);
+    RotateAlignNew(Replicate1D_result1, rotateAlign_result1, encoder, evaluator, gal_keys, relin_keys, 1, slot_count, scale);
     Cipher_Matrix rotateAlign_result2;
-    RotateAlignNew(x_cipher2, rotateAlign_result2, encoder, evaluator, gal_keys, relin_keys, 0, slot_count, scale);
+    RotateAlignNew(Replicate1D_result2, rotateAlign_result2, encoder, evaluator, gal_keys, relin_keys, 0, slot_count, scale);
 
     cout << "    + The scale of x_cipher after RotateAlign: " << log2(rotateAlign_result1.m.scale()) << endl;
     cout << "    + The parm_id of x_cipher after RotateAlign: " << rotateAlign_result1.m.parms_id() << endl;
     cout << "    + The coeff_modulus_size of x_cipher before RotateAlign: " << rotateAlign_result1.m.coeff_modulus_size() << endl;
     cout << endl;
-
-/*---------------------------------Rotate1D-------------------------------------------*/
-    //int step = 2;
-
-    //cout << "    + The scale of x_cipher before Rotate: " << log2(rotateAlign_result1.m.scale()) << endl;
-    //cout << "    + The parm_id of x_cipher before Rotate: " << rotateAlign_result1.m.parms_id() << endl;
-    //cout << "    + The coeff_modulus_size of x_cipher before Rotate: " << rotateAlign_result1.m.coeff_modulus_size() << endl;
-    //cout << endl;
-
-    //Cipher_Matrix Rotate_result1;
-    //Cipher_Matrix Rotate_result2;
-
-    //Rotate1DNew(rotateAlign_result1, Rotate_result1, encoder, evaluator, gal_keys, relin_keys, 1, step, slot_count, scale);
-    //Rotate1DNew(rotateAlign_result2, Rotate_result2, encoder, evaluator, gal_keys, relin_keys, 0, step, slot_count, scale);
-
-    //cout << "    + The scale of x_cipher after Rotate: " << log2(Rotate_result1.m.scale()) << endl;
-    //cout << "    + The parm_id of x_cipher after Rotate: " << Rotate_result1.m.parms_id() << endl;
-    //cout << "    + The coeff_modulus_size of x_cipher before Rotate: " << Rotate_result1.m.coeff_modulus_size() << endl;
-    //cout << endl;
 
 /*-----------------------------Mult and Add------------------------------------------*/
     
@@ -169,7 +170,7 @@ int main()
     decryptor.decrypt(Mult_result, plain_result_m1);
     encoder.decode(plain_result_m1, result);
     print_vector(result, 16, 5);
-    cout << t2 - t1 << endl;
+    cout << "    + The time of this Matrix Multiply: " << t2 - t1 << "s." << endl;
 }
 
 
@@ -178,6 +179,8 @@ void Init_Matrix(Cipher_Matrix& src, int col, int row, int D0, int D1, CKKSEncod
     cout << "  Init_Matrix:" << endl;
     src.col[0] = col;
     src.row[0] = row;
+    src.col[1] = D0;
+    src.row[1] = D1;
     vector<double> input(slot_count, 0.0);
     Plaintext x_plain;
     for (int i = 0; i < col; i++)
@@ -194,13 +197,47 @@ void Init_Matrix(Cipher_Matrix& src, int col, int row, int D0, int D1, CKKSEncod
 }
 
 
+void Replicate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, int dim, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, RelinKeys relin_keys)
+{
+    cout << "  Replicate1DNew:" << endl;
+    if(dim == 1)
+    {
+        destination = src;
+        int d_dim = src.row[0];
+        int D1 = src.row[1];
+        int step = 1;
+        for(int k = 1; k <= log2(D1/d_dim); k++)
+        {
+            Ciphertext tmp;
+            evaluator.rotate_vector(destination.m, -step*d_dim, gal_keys, tmp);
+            evaluator.add_inplace(destination.m, tmp);
+            step *= 2;
+        }
+    }
+    else if(dim == 0)
+    {
+        destination = src;
+        int d_dim = src.col[0];
+        int D0 = src.col[1];
+        int step = 1;
+        for(int k = 1; k <= log2(D0/d_dim); k++)
+        {
+            Ciphertext tmp;
+            evaluator.rotate_vector(destination.m, -step * src.col[0] * src.row[0], gal_keys, tmp);
+            evaluator.add_inplace(destination.m, tmp);
+            step *= 2;
+        }
+    }
+}
+
+
 void Rotate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, RelinKeys relin_keys, int dim, int step, int slot_count, double scale)
 {
     cout << "  Rotate1DNew:" << endl;
     destination = src;
     if(dim == 1)
     {
-        int m = src.col[0], l = src.row[0];
+        int m = src.col[1], l = src.row[1];
         int step_t = (step + l - 1) % l + 1;
         Plaintext mask1;
         Plaintext mask2;
@@ -238,7 +275,7 @@ void Rotate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder& en
     }
     else if(dim == 0)
     {
-        int l = src.col[0], n = src.row[0];
+        int l = src.col[1], n = src.row[1];
         int step_t = (step + l - 1) % l + 1;
         Plaintext mask1;
         Plaintext mask2;
@@ -282,7 +319,7 @@ void RotateAlignNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder&
     cout << "  RotateAlignNew:" << endl;
     if(dim == 1)
     {
-        int m = src.col[0], l = src.row[0];
+        int m = src.col[1], l = src.row[1];
         int Us_edge = m * l;
         vector<double> Us(slot_count * slot_count, 0.0);
         for(int i = 0; i < m; i++)
@@ -299,6 +336,8 @@ void RotateAlignNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder&
         {
             destination.col[0] = src.col[0];
             destination.row[0] = src.row[0];
+            destination.col[1] = src.col[1];
+            destination.row[1] = src.row[1];
             /*the ciphertext in this code block need to rescale.*/
             evaluator.rotate_vector(src.m, -l+1, gal_keys, destination.m);
 
@@ -341,7 +380,7 @@ void RotateAlignNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder&
     }
     else if(dim == 0)
     {
-        int l = src.col[0], n = src.row[0];
+        int l = src.col[1], n = src.row[1];
         int Ut_edge = l * n;
         vector<double> Ut(slot_count * slot_count, 0.0);
         for(int i = 0; i < l; i++)

@@ -30,6 +30,8 @@ public:
 
 void Init_Matrix(Cipher_Matrix& src, int col, int row, int D0, int D1, CKKSEncoder &encoder, Encryptor &encryptor, int slot_count, double scale);
 
+void Replicate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, int dim, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, RelinKeys relin_keys);
+
 int main()
 {
     EncryptionParameters parms(scheme_type::ckks);
@@ -93,17 +95,10 @@ int main()
     cout << "    + The coeff_modulus_size of x_cipher before Replicate1D: " << x_cipher1.m.coeff_modulus_size() << endl;
     cout << endl;
 
+
     Cipher_Matrix Replicate1D_result;
-    Replicate1D_result = x_cipher1;
-    int d_dim = x_cipher1.row[0];
-    int step = 1;
-    for(int k = 1; k <= log2(D1/d_dim); k++)
-    {
-        Ciphertext tmp;
-        evaluator.rotate_vector(Replicate1D_result.m, -step*d_dim, gal_keys, tmp);
-        evaluator.add_inplace(Replicate1D_result.m, tmp);
-        step *= 2;
-    }
+    Replicate1DNew(x_cipher1, Replicate1D_result, 1, encoder, evaluator, gal_keys, relin_keys);
+    
 
     cout << "    + The scale of x_cipher after Replicate1D: " << log2(Replicate1D_result.m.scale()) << endl;
     cout << "    + The parm_id of x_cipher after Replicate1D: " << Replicate1D_result.m.parms_id() << endl;
@@ -118,13 +113,6 @@ int main()
         evaluator.add_inplace(Replicate1D_result.m, tmp);
         step /= 2;
     }*/
-
-
-
-
-
-
-
 
 /*----------------------------Print the Result----------------------------------------*/
 
@@ -157,4 +145,37 @@ void Init_Matrix(Cipher_Matrix& src, int col, int row, int D0, int D1, CKKSEncod
     print_vector(input, 16, 5);
     encoder.encode(input, scale, x_plain);
     encryptor.encrypt(x_plain, src.m);
+}
+
+
+void Replicate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, int dim, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, RelinKeys relin_keys)
+{
+    if(dim == 1)
+    {
+        destination = src;
+        int d_dim = src.row[0];
+        int D1 = src.row[1];
+        int step = 1;
+        for(int k = 1; k <= log2(D1/d_dim); k++)
+        {
+            Ciphertext tmp;
+            evaluator.rotate_vector(destination.m, -step*d_dim, gal_keys, tmp);
+            evaluator.add_inplace(destination.m, tmp);
+            step *= 2;
+        }
+    }
+    else if(dim == 0)
+    {
+        destination = src;
+        int d_dim = src.col[0];
+        int D0 = src.col[1];
+        int step = 1;
+        for(int k = 1; k <= log2(D0/d_dim); k++)
+        {
+            Ciphertext tmp;
+            evaluator.rotate_vector(destination.m, -step * src.col[0] * src.row[0], gal_keys, tmp);
+            evaluator.add_inplace(destination.m, tmp);
+            step *= 2;
+        }
+    }
 }
