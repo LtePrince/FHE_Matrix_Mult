@@ -123,7 +123,7 @@ int main()
     cout << endl;
 
     Cipher_Matrix rotateAlign_result;
-    RotateAlignNew(x_cipher1, rotateAlign_result, encoder, evaluator, gal_keys, relin_keys, 1, slot_count, scale);
+    RotateAlignNew(x_cipher1, rotateAlign_result, encoder, evaluator, gal_keys, relin_keys, 0, slot_count, scale);
 
     cout << "    + The scale of x_cipher after Rotate: " << log2(rotateAlign_result.m.scale()) << endl;
     cout << "    + The parm_id of x_cipher after Rotate: " << rotateAlign_result.m.parms_id() << endl;

@@ -186,7 +186,7 @@ void Replicate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, int dim, CKK
         for(int k = 1; k <= log2(D0/d_dim); k++)
         {
             Ciphertext tmp;
-            evaluator.rotate_vector(destination.m, -step * src.col[0] * src.row[0], gal_keys, tmp);
+            evaluator.rotate_vector(destination.m, -step * src.col[0] * src.row[1], gal_keys, tmp);
             evaluator.add_inplace(destination.m, tmp);
             step *= 2;
         }
@@ -533,7 +533,7 @@ void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     cout << "    + The coeff_modulus_size of x_cipher before Replicate1D: " << B0.m.coeff_modulus_size() << endl;
     cout << endl;
 
-    evaluator.mod_switch_to_inplace(m1.m, B0.m.parms_id());
+    //evaluator.mod_switch_to_inplace(m1.m, B0.m.parms_id());
     FHE_MatMultMain(m1, B0, tmp, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
     destination = tmp;
     //Sum1DNew(tmp, destination, evaluator, gal_keys,  slot_count);

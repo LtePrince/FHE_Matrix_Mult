@@ -97,8 +97,8 @@ int main()
 
 
     Cipher_Matrix Replicate1D_result;
-    Replicate1DNew(x_cipher1, Replicate1D_result, 1, encoder, evaluator, gal_keys, relin_keys);
-    
+    Replicate1DNew(x_cipher2, Replicate1D_result, 1, encoder, evaluator, gal_keys, relin_keys);
+    Replicate1DNew(Replicate1D_result, Replicate1D_result, 0, encoder, evaluator, gal_keys, relin_keys);
 
     cout << "    + The scale of x_cipher after Replicate1D: " << log2(Replicate1D_result.m.scale()) << endl;
     cout << "    + The parm_id of x_cipher after Replicate1D: " << Replicate1D_result.m.parms_id() << endl;
@@ -173,7 +173,7 @@ void Replicate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, int dim, CKK
         for(int k = 1; k <= log2(D0/d_dim); k++)
         {
             Ciphertext tmp;
-            evaluator.rotate_vector(destination.m, -step * src.col[0] * src.row[0], gal_keys, tmp);
+            evaluator.rotate_vector(destination.m, -step * src.col[0] * src.row[1], gal_keys, tmp);
             evaluator.add_inplace(destination.m, tmp);
             step *= 2;
         }
