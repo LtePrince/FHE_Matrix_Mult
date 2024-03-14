@@ -535,6 +535,7 @@ void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
 
     evaluator.mod_switch_to_inplace(m1.m, B0.m.parms_id());
     FHE_MatMultMain(m1, B0, tmp, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
+    destination = tmp;
     //Sum1DNew(tmp, destination, evaluator, gal_keys,  slot_count);
 }
 
@@ -559,5 +560,6 @@ void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     cout << endl;
 
     FHE_MatMultMain(A0, B0, tmp, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
+    destination = tmp;
     //Sum1DNew(tmp, destination, evaluator, gal_keys, slot_count);
 }
