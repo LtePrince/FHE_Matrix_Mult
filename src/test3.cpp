@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS 1
 #include<iostream>
+#include<time.h>
 #include"seal/seal.h"
 #include"include/examples.h"
 
@@ -91,6 +92,9 @@ int main()
     Cipher_Matrix x_cipher2;
     Init_Matrix(x_cipher2, l, n, D0, D1, encoder, encryptor, slot_count, scale);
 /*---------------------------------RotateAlign----------------------------------------*/
+    time_t t1, t2;
+    t1 = time(NULL);
+    
     cout << "    + The scale of x_cipher before RotateAlign: " << log2(x_cipher1.m.scale()) << endl;
     cout << "    + The parm_id of x_cipher before RotateAlign: " << x_cipher1.m.parms_id() << endl;
     cout << "    + The coeff_modulus_size of x_cipher before RotateAlign: " << x_cipher1.m.coeff_modulus_size() << endl;
@@ -156,6 +160,7 @@ int main()
     cout << "    + The parm_id of Mult_result after Multiply and Add: " << Mult_result.parms_id() << endl;
     cout << "    + The coeff_modulus_size of Mult_result before Multiply and Add: " << Mult_result.coeff_modulus_size() << endl;
     cout << endl;
+    t2 = time(NULL);
     
 /*----------------------------Print the Result----------------------------------------*/
 
@@ -164,6 +169,7 @@ int main()
     decryptor.decrypt(Mult_result, plain_result_m1);
     encoder.decode(plain_result_m1, result);
     print_vector(result, 16, 5);
+    cout << t2 - t1 << endl;
 }
 
 
