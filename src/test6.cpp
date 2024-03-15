@@ -123,7 +123,6 @@ int main()
     default:
         Homo_mat_mult_med(x_cipher1, x_cipher2, dest, encoder, evaluator, encryptor, gal_keys, relin_keys, slot_count, scale);
     }
-    evaluator.rescale_to_next_inplace(dest.m);
 
     t2 = time(NULL);
 
@@ -464,6 +463,7 @@ void Sum1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder &encod
             evaluator.add_inplace(destination.m, tmp);
         }
     }
+    evaluator.rescale_to_next_inplace(destination.m);
 }
 
 
