@@ -35,15 +35,15 @@ void Rotate1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder& en
 
 void RotateAlignNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int dim, int slot_count, double scale);
 
-void Sum1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count);
+void Sum1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder &encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count, double scale);
 
 void FHE_MatMultMain(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale);
 
 void Homo_mat_mult_min(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale);
 
-void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale);
+void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, RelinKeys& relin_keys, int slot_count, double scale);
 
-void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale);
+void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, RelinKeys& relin_keys, int slot_count, double scale);
 
 int main()
 {
@@ -116,10 +116,10 @@ int main()
         Homo_mat_mult_min(x_cipher1, x_cipher2, dest, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
         break;
     case 1:
-        Homo_mat_mult_max(x_cipher1, x_cipher2, dest, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
+        Homo_mat_mult_max(x_cipher1, x_cipher2, dest, encoder, evaluator, encryptor, gal_keys, relin_keys, slot_count, scale);
         break;
     default:
-        Homo_mat_mult_med(x_cipher1, x_cipher2, dest, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
+        Homo_mat_mult_med(x_cipher1, x_cipher2, dest, encoder, evaluator, encryptor, gal_keys, relin_keys, slot_count, scale);
     }
 
 
@@ -421,29 +421,38 @@ void RotateAlignNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder&
 }
 
 
-void Sum1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count)
+void Sum1DNew(Cipher_Matrix& src, Cipher_Matrix& destination, CKKSEncoder &encoder, Evaluator& evaluator, GaloisKeys& gal_keys, int slot_count, double scale)
 {
-    cout << "  Sum1DNew:" << endl;
-    destination = src;
-    int D0 = src.col[1];
     int D1 = src.row[1];
-    int d_dim = D0 * D1;
-    int step = 1;//question: log2(slot_count/d_dim) is an interger?
-    for(int k = 1; k <= log2(slot_count/d_dim); k++)
+    int d_dim = src.row[0];
+    vector<double> input(slot_count, 0.0);
+    Plaintext x_plain;
+
+    for(int i = 0; i < src.col[0]; i++)
     {
-        Ciphertext tmp;
-        evaluator.rotate_vector(destination.m, -step*d_dim, gal_keys, tmp);
-        evaluator.add_inplace(destination.m, tmp);
-        step *= 2;
+        for(int j = 0; j < d_dim; j++)
+        {
+            input[i * D1 + j] = 1;
+        }
     }
-    int k = log2(D1/src.row[0]);
-    step = pow(2, k - 1);
-    for(; k >= 1; k--)
+    encoder.encode(input, scale, x_plain);
+
+    parms_id_type last_parms_id = src.m.parms_id();
+    evaluator.mod_switch_to_inplace(x_plain, last_parms_id);
+
+    for(int k = 0; k < D1/d_dim; k++)
     {
         Ciphertext tmp;
-        evaluator.rotate_vector(destination.m, - step * src.row[0], gal_keys, tmp);
-        evaluator.add_inplace(destination.m, tmp);
-        step /= 2;
+        evaluator.rotate_vector(src.m, k * d_dim, gal_keys, tmp);
+        if(k == 0)
+        {
+            evaluator.multiply_plain(tmp, x_plain, destination.m);
+        }
+        else
+        {
+            evaluator.multiply_plain_inplace(tmp, x_plain);
+            evaluator.add_inplace(destination.m, tmp);
+        }
     }
 }
 
@@ -513,7 +522,7 @@ void Homo_mat_mult_min(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
 }
 
 
-void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale)
+void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, RelinKeys& relin_keys, int slot_count, double scale)
 {
     Cipher_Matrix A0;
     Cipher_Matrix B0;
@@ -535,12 +544,13 @@ void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
 
     //evaluator.mod_switch_to_inplace(m1.m, B0.m.parms_id());
     FHE_MatMultMain(m1, B0, tmp, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
-    destination = tmp;
-    //Sum1DNew(tmp, destination, evaluator, gal_keys,  slot_count);
+    //destination = tmp;
+    evaluator.relinearize_inplace(tmp.m, relin_keys);
+    Sum1DNew(tmp, destination, encoder, evaluator, gal_keys,  slot_count, scale);
 }
 
 
-void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, int slot_count, double scale)
+void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, RelinKeys& relin_keys, int slot_count, double scale)
 {
     Cipher_Matrix A0;
     Cipher_Matrix B0;
@@ -560,6 +570,7 @@ void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     cout << endl;
 
     FHE_MatMultMain(A0, B0, tmp, encoder, evaluator, encryptor, gal_keys, slot_count, scale);
-    destination = tmp;
-    //Sum1DNew(tmp, destination, evaluator, gal_keys, slot_count);
+    //destination = tmp;
+    evaluator.relinearize_inplace(tmp.m, relin_keys);
+    Sum1DNew(tmp, destination, encoder, evaluator, gal_keys,  slot_count, scale);
 }
