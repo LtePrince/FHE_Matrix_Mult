@@ -45,6 +45,8 @@ void Homo_mat_mult_med(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
 
 void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& destination, CKKSEncoder& encoder, Evaluator& evaluator, Encryptor& encryptor, GaloisKeys& gal_keys, RelinKeys& relin_keys, int slot_count, double scale);
 
+void Matrix_plain_Mult(vector<double> &m1, vector<double> &m2, vector<double> &m3,int m,int l,int n,int D0,int D1);
+
 int main()
 {
     EncryptionParameters parms(scheme_type::ckks);
@@ -121,9 +123,14 @@ int main()
     default:
         Homo_mat_mult_med(x_cipher1, x_cipher2, dest, encoder, evaluator, encryptor, gal_keys, relin_keys, slot_count, scale);
     }
-
+    evaluator.rescale_to_next_inplace(dest.m);
 
     t2 = time(NULL);
+
+    vector<double> m1(slot_count, 0.0);
+    vector<double> m2(slot_count, 0.0);
+    vector<double> m3(slot_count, 0.0);
+
     
 /*----------------------------Print the Result----------------------------------------*/
 
@@ -134,6 +141,9 @@ int main()
     encoder.decode(plain_result_m1, result);
     print_vector(result, 16, 5);
     cout << "    + The time of this Matrix Multiply: " << t2 - t1 << "s." << endl;
+
+    Matrix_plain_Mult(m1, m2, m3, m, l, n, D0, D1);
+    print_vector(m3, 16, 5);
 }
 
 
@@ -573,4 +583,33 @@ void Homo_mat_mult_max(Cipher_Matrix& m1, Cipher_Matrix& m2, Cipher_Matrix& dest
     //destination = tmp;
     evaluator.relinearize_inplace(tmp.m, relin_keys);
     Sum1DNew(tmp, destination, encoder, evaluator, gal_keys,  slot_count, scale);
+}
+
+
+void Matrix_plain_Mult(vector<double>& m1, vector<double>& m2, vector<double>& m3, int m, int l, int n, int D0, int D1)
+{
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < l; j++)
+        {
+            m1[i * l + j] = i * l + j + 1;
+        }
+    }
+    for (int i = 0; i < l; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            m2[i * n + j] = i * n + j + 1;
+        }
+    }
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            for (int k = 0; k < l; k++)
+            {
+                m3[i * D1 + j] += m1[i * l + k] * m2[k * n + j];
+            }
+        }
+    }
 }
